@@ -1,0 +1,57 @@
+{
+	"name": "pl_audi_databricks_notebook_run",
+	"properties": {
+		"activities": [
+			{
+				"name": "Run Audi Notebook",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": {
+						"value": "@pipeline().parameters.notebookName",
+						"type": "Expression"
+					},
+					"baseParameters": {
+						"parameter1": {
+							"value": "@pipeline().parameters.parameter1",
+							"type": "Expression"
+						},
+						"parameter2": {
+							"value": "@pipeline().parameters.parameter2",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"notebookName": {
+				"type": "string",
+				"defaultValue": "/mbuadl_agg/"
+			},
+			"parameter1": {
+				"type": "string",
+				"defaultValue": "default1"
+			},
+			"parameter2": {
+				"type": "string",
+				"defaultValue": "default2"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-16T20:13:24Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

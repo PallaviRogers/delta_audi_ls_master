@@ -1,0 +1,277 @@
+{
+	"name": "pl_audi_zeotap_processor",
+	"properties": {
+		"description": "This run databricks notebooks based on parameters passed and generate files in corresponding files",
+		"activities": [
+			{
+				"name": "category_folder",
+				"type": "Switch",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"on": {
+						"value": "@if(equals(pipeline().parameters.folder,'adobe'),'demographic_adobe',pipeline().parameters.category)",
+						"type": "Expression"
+					},
+					"cases": [
+						{
+							"value": "demographic",
+							"activities": [
+								{
+									"name": "demographic_adobe",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/zeotap/demographic_processor_adobe",
+										"baseParameters": {
+											"category": {
+												"value": "@pipeline().parameters.category",
+												"type": "Expression"
+											},
+											"file_type": {
+												"value": "@pipeline().parameters.file_type",
+												"type": "Expression"
+											},
+											"folder": {
+												"value": "@pipeline().parameters.folder",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_audi_databricks_v8x",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "demographic_google",
+									"type": "DatabricksNotebook",
+									"dependsOn": [
+										{
+											"activity": "demographic_adobe",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/zeotap/demographic_processor_google",
+										"baseParameters": {
+											"category": {
+												"value": "@pipeline().parameters.category",
+												"type": "Expression"
+											},
+											"file_type": {
+												"value": "@pipeline().parameters.file_type",
+												"type": "Expression"
+											},
+											"folder": {
+												"value": "@pipeline().parameters.folder",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_audi_databricks_v8x",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						},
+						{
+							"value": "appusage",
+							"activities": [
+								{
+									"name": "appusage_adobe",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/zeotap/appusage_processor_adobe",
+										"baseParameters": {
+											"category": {
+												"value": "@pipeline().parameters.category",
+												"type": "Expression"
+											},
+											"file_type": {
+												"value": "@pipeline().parameters.file_type",
+												"type": "Expression"
+											},
+											"folder": {
+												"value": "@pipeline().parameters.folder",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_audi_databricks_v8x",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "appusage_google",
+									"type": "DatabricksNotebook",
+									"dependsOn": [
+										{
+											"activity": "appusage_adobe",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/zeotap/appusage_processor_google",
+										"baseParameters": {
+											"category": {
+												"value": "@pipeline().parameters.category",
+												"type": "Expression"
+											},
+											"file_type": {
+												"value": "@pipeline().parameters.file_type",
+												"type": "Expression"
+											},
+											"folder": {
+												"value": "@pipeline().parameters.folder",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_audi_databricks_v8x",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						},
+						{
+							"value": "identity",
+							"activities": [
+								{
+									"name": "identity_adobe",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/zeotap/identity_processor_adobe",
+										"baseParameters": {
+											"category": {
+												"value": "@pipeline().parameters.category",
+												"type": "Expression"
+											},
+											"file_type": {
+												"value": "@pipeline().parameters.file_type",
+												"type": "Expression"
+											},
+											"folder": {
+												"value": "@pipeline().parameters.folder",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_audi_databricks_v8x",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						},
+						{
+							"value": "demographic_adobe",
+							"activities": [
+								{
+									"name": "demographic_adobe_processor",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/zeotap/demographic_processor_adobe _cookie",
+										"baseParameters": {
+											"category": {
+												"value": "@pipeline().parameters.category",
+												"type": "Expression"
+											},
+											"file_type ": {
+												"value": "@pipeline().parameters.file_type",
+												"type": "Expression"
+											},
+											"folder": {
+												"value": "@pipeline().parameters.folder",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_audi_databricks_v8x",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"category": {
+				"type": "string",
+				"defaultValue": "demographic"
+			},
+			"file_type": {
+				"type": "string",
+				"defaultValue": "gaid"
+			},
+			"folder": {
+				"type": "string",
+				"defaultValue": "gaid"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

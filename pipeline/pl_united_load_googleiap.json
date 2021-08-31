@@ -1,0 +1,116 @@
+{
+	"name": "pl_united_load_googleiap",
+	"properties": {
+		"activities": [
+			{
+				"name": "API Google IAP Connect",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": {
+						"value": "/ProjectUnited/GoogleIAP_Source_Connect",
+						"type": "Expression"
+					},
+					"baseParameters": {
+						"filename": {
+							"value": "@pipeline().parameters.TABLE_NAME",
+							"type": "Expression"
+						},
+						"schemaname": {
+							"value": "@pipeline().parameters.SCHEMA_NAME",
+							"type": "Expression"
+						},
+						"EXEC_RUN_ID": {
+							"value": "@pipeline().parameters.EXEC_RUN_ID",
+							"type": "Expression"
+						},
+						"METADATA_JSON": {
+							"value": "@string(pipeline().parameters.METADATA_JSON)",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "GOOGLEIAP V_SRC_COUNT_DERIVED",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "API Google IAP Connect",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "V_SRC_COUNT_DERIVED",
+					"value": {
+						"value": "@string(activity('API Google IAP Connect').output.runOutput[0])",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "GOOGLEIAP V_CURR_DELTA_VAL_DERIVED",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "GOOGLEIAP V_SRC_COUNT_DERIVED",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "V_CURR_DELTA_VAL_DERIVED",
+					"value": {
+						"value": "@string(activity('API Google IAP Connect').output.runOutput[1])",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"TABLE_NAME": {
+				"type": "string"
+			},
+			"SCHEMA_NAME": {
+				"type": "string"
+			},
+			"EXEC_RUN_ID": {
+				"type": "string"
+			},
+			"METADATA_JSON": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"V_CURR_DELTA_VAL_DERIVED": {
+				"type": "String"
+			},
+			"V_SRC_COUNT_DERIVED": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-08-27T16:39:55Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

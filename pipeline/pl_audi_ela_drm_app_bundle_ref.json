@@ -1,0 +1,174 @@
+{
+	"name": "pl_audi_ela_drm_app_bundle_ref",
+	"properties": {
+		"description": "Pipeline to move data from oracle to azure blob",
+		"activities": [
+			{
+				"name": "copy_ora_to_blob",
+				"description": "copy data from oracle to blob",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "OracleSource",
+						"oracleReaderQuery": {
+							"value": "@concat('select * from ',pipeline().parameters.schema_name,'.',pipeline().parameters.table_name)",
+							"type": "Expression"
+						},
+						"partitionOption": "None",
+						"queryTimeout": "02:00:00"
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "APP_NAME",
+									"type": "String"
+								},
+								"sink": {
+									"name": "APP_NAME",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "APP_CATEGORY",
+									"type": "String"
+								},
+								"sink": {
+									"name": "APP_CATEGORY",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "DRM_INSRT_BY",
+									"type": "String"
+								},
+								"sink": {
+									"name": "DRM_INSRT_BY",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "DRM_UPDT_BY",
+									"type": "String"
+								},
+								"sink": {
+									"name": "DRM_UPDT_BY",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "DRM_INSRT_DT",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "DRM_INSRT_DT",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "DRM_UPDT_DT",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "DRM_UPDT_DT",
+									"type": "DateTime"
+								}
+							}
+						]
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_audi_ora_ela_src",
+						"type": "DatasetReference",
+						"parameters": {
+							"schemaName": {
+								"value": "@pipeline().parameters.schema_name",
+								"type": "Expression"
+							},
+							"tableName": {
+								"value": "@pipeline().parameters.table_name",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_audi_azure_blob_table_parquet",
+						"type": "DatasetReference",
+						"parameters": {
+							"container_name": "raw",
+							"directory_name": {
+								"value": "@concat('raw_',pipeline().parameters.schema_name,'_lnd/',pipeline().parameters.table_name)",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Notebook1",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "copy_ora_to_blob",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/ela_drm/app_bundle_ref_load"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"schema_name": {
+				"type": "string",
+				"defaultValue": "ela_drm"
+			},
+			"table_name": {
+				"type": "string",
+				"defaultValue": "app_bundle_ref"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

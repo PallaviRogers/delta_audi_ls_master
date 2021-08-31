@@ -1,0 +1,245 @@
+{
+	"name": "pl_DQ_reconcile_run",
+	"properties": {
+		"activities": [
+			{
+				"name": "lkp_DQRuleReconList",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Set vRunDate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Set vRuleId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Set vRunId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureTableSource",
+						"azureTableSourceQuery": {
+							"value": "@concat('RuleId eq ''', variables('vRuleId'),'''')",
+							"type": "Expression"
+						},
+						"azureTableSourceIgnoreTableNotFound": false
+					},
+					"dataset": {
+						"referenceName": "ds_tbl_DQRuleReconList",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "Set vRunDate",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "vRunDate",
+					"value": {
+						"value": "@formatDateTime(utcnow(),'yyyy-MM-dd')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Set vRuleId",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "vRuleId",
+					"value": {
+						"value": "@coalesce(string(pipeline().parameters.RuleId),'1')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Execute Source Query",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "lkp_DQRuleReconList",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_DQ_query_run",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"QueryFor": {
+							"value": "Source",
+							"type": "Expression"
+						},
+						"Database": {
+							"value": "@activity('lkp_DQRuleReconList').output.FirstRow.SrcDatabase",
+							"type": "Expression"
+						},
+						"Schema": {
+							"value": "@activity('lkp_DQRuleReconList').output.FirstRow.SrcSchema",
+							"type": "Expression"
+						},
+						"Table": {
+							"value": "@activity('lkp_DQRuleReconList').output.FirstRow.SrcTable",
+							"type": "Expression"
+						},
+						"Query": {
+							"value": "@activity('lkp_DQRuleReconList').output.FirstRow.SrcQuery",
+							"type": "Expression"
+						},
+						"RuleId": {
+							"value": "@activity('lkp_DQRuleReconList').output.FirstRow.RuleId",
+							"type": "Expression"
+						},
+						"RunDate": {
+							"value": "@variables('vRunDate')",
+							"type": "Expression"
+						},
+						"RunId": {
+							"value": "@variables('vRunId')",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Execute Target Query",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "lkp_DQRuleReconList",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_DQ_query_run",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"QueryFor": {
+							"value": "Target",
+							"type": "Expression"
+						},
+						"Database": {
+							"value": "@activity('lkp_DQRuleReconList').output.FirstRow.TgtDatabase",
+							"type": "Expression"
+						},
+						"Schema": {
+							"value": "@activity('lkp_DQRuleReconList').output.FirstRow.TgtSchema",
+							"type": "Expression"
+						},
+						"Table": {
+							"value": "@activity('lkp_DQRuleReconList').output.FirstRow.TgtTable",
+							"type": "Expression"
+						},
+						"Query": {
+							"value": "@activity('lkp_DQRuleReconList').output.FirstRow.TgtQuery",
+							"type": "Expression"
+						},
+						"RuleId": {
+							"value": "@activity('lkp_DQRuleReconList').output.FirstRow.RuleId",
+							"type": "Expression"
+						},
+						"RunDate": {
+							"value": "@variables('vRunDate')",
+							"type": "Expression"
+						},
+						"RunId": {
+							"value": "@variables('vRunId')",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Set vRunId",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "vRunId",
+					"value": {
+						"value": "@pipeline().RunId",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"RuleId": {
+				"type": "string",
+				"defaultValue": "0"
+			}
+		},
+		"variables": {
+			"vQueryFor": {
+				"type": "String",
+				"defaultValue": "Source"
+			},
+			"vDatabase": {
+				"type": "String",
+				"defaultValue": "SrcDatabase"
+			},
+			"vSchema": {
+				"type": "String",
+				"defaultValue": "srcSchema"
+			},
+			"vTable": {
+				"type": "String",
+				"defaultValue": "SrcTable"
+			},
+			"vQuery": {
+				"type": "String",
+				"defaultValue": "SrcQuery"
+			},
+			"vRunDate": {
+				"type": "String"
+			},
+			"vRuleId": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"vRunId": {
+				"type": "String",
+				"defaultValue": "0"
+			}
+		},
+		"folder": {
+			"name": "DQ"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:14Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

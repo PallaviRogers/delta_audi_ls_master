@@ -1,0 +1,31 @@
+{
+	"name": "ds_audi_hdp_onprem_snk",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_azure_blob",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"filename": {
+				"type": "string"
+			},
+			"schemaname": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Orc",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"folderPath": {
+					"value": "@concat('raw_',concat(dataset().schemaname,concat('/',dataset().filename)))",
+					"type": "Expression"
+				},
+				"container": "raw"
+			}
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

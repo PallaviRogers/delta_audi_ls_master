@@ -1,0 +1,57 @@
+{
+	"name": "pl_gcs_s3_dfp_initial_master",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach_filename",
+				"description": "",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.filename",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "pl_gcs_s3_dfp_initial",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_gcs_s3_dfp_initial",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"filename": {
+										"value": "@item()",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"filename": {
+				"type": "array",
+				"defaultValue": [
+					"NetworkClicks",
+					"NetworkBackfillClicks",
+					"NetworkBackfillImpressions",
+					"NetworkImpressions",
+					"NetworkActivities"
+				]
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-03-22T22:20:47Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

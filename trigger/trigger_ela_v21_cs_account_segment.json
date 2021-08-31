@@ -1,0 +1,42 @@
+{
+	"name": "trigger_ela_v21_cs_account_segment",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_audi_ela_azure",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schema_name": "ela_ecss",
+					"src_table_name": "cs_account_segment",
+					"column_list": "SYSTEM_SRC_CD,DMT_CRYPTO.TOKENIZE(SRC_ACCT_KEY, 'K1') as SRC_ACCT_KEY,SEGMENT_ID,RULE_ID",
+					"tgt_table_name": "cs_account_segment_audi",
+					"filter_condition": " where 1 =1  "
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2021-01-20T15:35:00",
+				"timeZone": "Eastern Standard Time",
+				"schedule": {
+					"minutes": [
+						30
+					],
+					"hours": [
+						14
+					],
+					"weekDays": [
+						"Sunday"
+					]
+				}
+			}
+		}
+	}
+}

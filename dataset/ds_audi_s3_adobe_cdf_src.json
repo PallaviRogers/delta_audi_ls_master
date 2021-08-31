@@ -1,0 +1,18 @@
+{
+	"name": "ds_audi_s3_adobe_cdf_src",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_s3_adobe_aam_outbound",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AmazonS3Location",
+				"bucketName": "aam-cdf"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

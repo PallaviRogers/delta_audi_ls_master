@@ -1,0 +1,27 @@
+{
+	"name": "ds_environics_src",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_environics",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"src_directory": {
+				"type": "string",
+				"defaultValue": "fromEA/Rogers - Enterprise/1. Licensed Data"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "SftpLocation",
+				"folderPath": {
+					"value": "@dataset().src_directory",
+					"type": "Expression"
+				}
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

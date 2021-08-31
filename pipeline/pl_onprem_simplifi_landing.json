@@ -1,0 +1,89 @@
+{
+	"name": "pl_onprem_simplifi_landing",
+	"properties": {
+		"activities": [
+			{
+				"name": "copy_onprem_simplifiid_uuid_mapping_",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "OrcSource",
+						"storeSettings": {
+							"type": "HdfsReadSettings",
+							"recursive": true,
+							"wildcardFileName": "*",
+							"enablePartitionDiscovery": false
+						}
+					},
+					"sink": {
+						"type": "OrcSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_audi_hdp_onprem_simplifi_src",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": "simplifiid_uuid_mapping"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_audi_hdp_onprem_dfp_snk",
+						"type": "DatasetReference",
+						"parameters": {
+							"directoryName": "raw_simplifi/landing"
+						}
+					}
+				]
+			},
+			{
+				"name": "load_onprem_simplifi_tables_azure",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "copy_onprem_simplifiid_uuid_mapping_",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_onprem_simplifi_loading",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"parameters": {
+			"start_date": {
+				"type": "string",
+				"defaultValue": "12/01/2018  00:00:00"
+			},
+			"end_date": {
+				"type": "string",
+				"defaultValue": "02/29/2020 00:00:00"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-03-22T22:20:47Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,28 @@
+{
+	"name": "ds_audi_hdp_onprem_dfp_src",
+	"properties": {
+		"description": "Source : Hive on prem\nSchema : dfp\n",
+		"linkedServiceName": {
+			"referenceName": "ls_audi_hdfs_dev",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"filename": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Orc",
+		"typeProperties": {
+			"location": {
+				"type": "HdfsLocation",
+				"folderPath": {
+					"value": "@concat('apps/hive/warehouse/',concat(toLower('dfp'),concat('.db/',toLower(dataset().filename))))",
+					"type": "Expression"
+				}
+			}
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,85 @@
+{
+	"name": "ds_dlt_DQValidationList",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_databricks_delta",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "DQ"
+		},
+		"annotations": [],
+		"type": "AzureDatabricksDeltaLakeDataset",
+		"typeProperties": {
+			"database": "dq",
+			"table": "dqvalidationlist"
+		},
+		"schema": [
+			{
+				"name": "PartitionKey",
+				"type": "string"
+			},
+			{
+				"name": "RowKey",
+				"type": "string"
+			},
+			{
+				"name": "Timestamp",
+				"type": "string"
+			},
+			{
+				"name": "RuleId",
+				"type": "string"
+			},
+			{
+				"name": "Database",
+				"type": "string"
+			},
+			{
+				"name": "Schema",
+				"type": "string"
+			},
+			{
+				"name": "Table",
+				"type": "string"
+			},
+			{
+				"name": "ValidationColumn",
+				"type": "string"
+			},
+			{
+				"name": "RuleDescription",
+				"type": "string"
+			},
+			{
+				"name": "ExpectedCountExpression",
+				"type": "string"
+			},
+			{
+				"name": "ActualCountExpression",
+				"type": "string"
+			},
+			{
+				"name": "ThresholdType",
+				"type": "string"
+			},
+			{
+				"name": "ThresholdGreen",
+				"type": "long"
+			},
+			{
+				"name": "ThresholdRed",
+				"type": "long"
+			},
+			{
+				"name": "ThresholdYellow",
+				"type": "long"
+			},
+			{
+				"name": "Enabled",
+				"type": "string"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

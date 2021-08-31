@@ -1,0 +1,35 @@
+{
+	"name": "trigger_enterprise_activity_grade_dim",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_audi_bdw_azure_tl",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schema_name": "enterprise",
+					"src_table_name": "activity_grade_dim",
+					"tgt_table_name": "activity_grade_dim",
+					"column_list": "*"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2020-12-07T21:55:00",
+				"timeZone": "Eastern Standard Time",
+				"schedule": {
+					"weekDays": [
+						"Saturday"
+					]
+				}
+			}
+		}
+	}
+}

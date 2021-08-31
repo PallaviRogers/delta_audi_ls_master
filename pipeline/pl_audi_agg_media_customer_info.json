@@ -1,0 +1,51 @@
+{
+	"name": "pl_audi_agg_media_customer_info",
+	"properties": {
+		"activities": [
+			{
+				"name": "Media Customer info processor",
+				"description": "Media Customer info processor",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/mbuadl_agg/media_customer_info/media_customer_info_run",
+					"baseParameters": {
+						"dataSource": {
+							"value": "@pipeline().parameters.dataSource",
+							"type": "Expression"
+						},
+						"loadType": {
+							"value": "@pipeline().parameters.loadType",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"dataSource": {
+				"type": "string",
+				"defaultValue": "zoura"
+			},
+			"loadType": {
+				"type": "string",
+				"defaultValue": "fullrefresh"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

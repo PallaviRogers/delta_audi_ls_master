@@ -1,0 +1,42 @@
+{
+	"name": "trigger_enterprise_segment_ebu_dim",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_audi_bdw_azure_tl",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schema_name": "enterprise",
+					"src_table_name": "segment_ebu_dim",
+					"tgt_table_name": "tgt_table_name_audi",
+					"column_list": "SEGMENT_SKEY,SEGMENT_ID,ECSS_SEGMENT_DESC,EBU_SEGMENT_DESC,EBU_SUB_SEGMENT_DESC,IDV_IND",
+					"filter_condition": " where crnt_flg = 'Y'"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2021-01-27T15:24:00",
+				"timeZone": "Eastern Standard Time",
+				"schedule": {
+					"minutes": [
+						15
+					],
+					"hours": [
+						14
+					],
+					"weekDays": [
+						"Sunday"
+					]
+				}
+			}
+		}
+	}
+}

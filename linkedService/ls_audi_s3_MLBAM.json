@@ -1,0 +1,33 @@
+{
+	"name": "ls_audi_s3_MLBAM",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"description": "Establish connectivity with source - MLBAM S3 to Azure",
+		"annotations": [],
+		"type": "AmazonS3",
+		"typeProperties": {
+			"serviceUrl": "",
+			"accessKeyId": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_audi_kv",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "conn-audi-S3-MLBAM-accesskey"
+			},
+			"secretAccessKey": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_audi_kv",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "conn-audi-S3-MLBAM-secretkey"
+			},
+			"authenticationType": "AccessKey"
+		},
+		"connectVia": {
+			"referenceName": "AUDI-IR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

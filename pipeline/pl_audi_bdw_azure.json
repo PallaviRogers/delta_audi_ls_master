@@ -1,0 +1,302 @@
+{
+	"name": "pl_audi_bdw_azure",
+	"properties": {
+		"description": "Pipeline to move data from oracle to azure blob",
+		"activities": [
+			{
+				"name": "copy_ora_to_blob",
+				"description": "copy data from oracle to blob",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Set variable1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "OracleSource",
+						"oracleReaderQuery": {
+							"value": "@concat('select ',pipeline().parameters.column_list,' from ',pipeline().parameters.schema_name,'.',pipeline().parameters.src_table_name,variables('filter'))",
+							"type": "Expression"
+						},
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings",
+							"blockSizeInMB": 10
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_audi_ora_bdw_src",
+						"type": "DatasetReference",
+						"parameters": {
+							"schemaName": {
+								"value": "@pipeline().parameters.schema_name",
+								"type": "Expression"
+							},
+							"tableName": {
+								"value": "@pipeline().parameters.src_table_name",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_audi_azure_blob_table_parquet",
+						"type": "DatasetReference",
+						"parameters": {
+							"container_name": "raw",
+							"directory_name": {
+								"value": "@concat('raw_',pipeline().parameters.schema_name,'_lnd/',pipeline().parameters.tgt_table_name)",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "processor",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "copy_ora_to_blob",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/bdw/bdw_curated_tables_append",
+					"baseParameters": {
+						"schema_name": {
+							"value": "@toLower(pipeline().parameters.schema_name)",
+							"type": "Expression"
+						},
+						"table_name": {
+							"value": "@toLower(pipeline().parameters.tgt_table_name)",
+							"type": "Expression"
+						},
+						"partition_column": {
+							"value": "@pipeline().parameters.partition_column",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "start_date_end_date",
+				"description": "This processor will check whether the parameter passed to the pipeline is \"initial\" or \"incremental\". According to the parameter, values for start_date and end_date will be set up.",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.load_type,'initial')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "start_date_incrimental",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "get_delta_date",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "start_date",
+								"value": {
+									"value": "@activity('get_delta_date').Output.runOutPut",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "end_date_incremental",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "end_date",
+								"value": {
+									"value": "@formatDateTime(utcnow(), 'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "get_delta_date",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/bdw/bdw_curated_table_load_dt",
+								"baseParameters": {
+									"table_name": {
+										"value": "@pipeline().parameters.src_table_name",
+										"type": "Expression"
+									},
+									"filter_column": {
+										"value": "@pipeline().parameters.filter_column",
+										"type": "Expression"
+									},
+									"schema_name": {
+										"value": "@pipeline().parameters.schema_name",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "start_date_initail",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "start_date",
+								"value": {
+									"value": "@formatDateTime(pipeline().parameters.start_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "end_date_initial",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "end_date",
+								"value": {
+									"value": "@formatDateTime(pipeline().parameters.end_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "start_date_end_date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "filter",
+					"value": {
+						"value": "@concat(' where ',pipeline().parameters.filter_column,'> to_date(''',variables('start_date'),''',','''yyyy-mm-dd'') and ',pipeline().parameters.filter_column,'<=to_date(''',variables('end_date'),''',','''yyyy-mm-dd'')')",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"schema_name": {
+				"type": "string",
+				"defaultValue": "app_ibro"
+			},
+			"src_table_name": {
+				"type": "string",
+				"defaultValue": "ibro_subscriber_activity"
+			},
+			"tgt_table_name": {
+				"type": "string",
+				"defaultValue": "ibro_subscriber_activity"
+			},
+			"column_list": {
+				"type": "string",
+				"defaultValue": "ENTERPRISE_ID, CUSTOMER_COMPANY, CUSTOMER_ACCOUNT_KEY, DMT_CRYPTO.TOKENIZE(CUSTOMER_ACCOUNT,'K1') AS CUSTOMER_ACCOUNT, DMT_CRYPTO.TOKENIZE(CUSTOMER_ID,'K1') AS CUSTOMER_ID, DMT_CRYPTO.TOKENIZE(CUSTOMER_SUBSCRIBER_NO, 'K1') AS CUSTOMER_SUBSCRIBER_NO , CUSTOMER_MULTI_BRAND_KEY, CUSTOMER_MULTI_PRODUCT_KEY, CUSTOMER_MULTI_SEGMENT_KEY, CUSTOMER_SEGMENT_KEY, CUSTOMER_SEGMENT, CUSTOMER_VALUE_KEY, CUSTOMER_LOCATION_KEY, CUSTOMER_LOCATION_ID, PRODUCT_LOB, PRODUCT_LOB_UNIT, PRODUCT_SOURCE, PRODUCT_PRICE_PLAN, PRODUCT_OFFER, PRODUCT_COMPONENT, PRODUCT_TIER_KEY, PRODUCT_KEY, PRODUCT_CODE, PRODUCT_INSTANCE, PRODUCT_INSTANCE_VERSION, PRODUCT_ACQUISITION, PRODUCT_EQUIPMENT_NO, PRODUCT_BRAND, PRODUCT_SEGMENT_KEY, PRODUCT_SEGMENT, PRODUCT_DEALER_KEY, PRODUCT_DEALER, PRODUCT_QUANTITY, PRODUCT_QUANTITY_ENTERPRISE, PRODUCT_MSF, PRODUCT_MSF_OVERRIDE, PRODUCT_MSF_NET, PRODUCT_MSF_NET_ENTERPRISE, PRODUCT_DISCOUNT_KEY, PRODUCT_DISCOUNT_CODE, PRODUCT_DISCOUNT_TYPE, PRODUCT_DISCOUNT, PRODUCT_ONETIME_AMT, ACTIVITY, ACTIVITY_ENTERPRISE, ACTIVITY_TYPE, ACTIVITY_DATE, ACTIVITY_VALUE, ACTIVITY_VALUE_ENTERPRISE, ACTIVITY_REASON, ACTIVITY_CHURN, ACTIVITY_VOLUNTARY, ACTIVITY_GRADE_RATE_KEY, ACTIVITY_GRADE_DISCOUNT_KEY, ACTIVITY_RECLASS, ACTIVITY_RECLASS_VALUE, ACTIVITY_PORT, ACTIVITY_PORT_OSP, ACTIVITY_PORT_NSP, ACTIVITY_OPERATOR_KEY, ACTIVITY_OPERATOR, ACTIVITY_TECHNICIAN_KEY, ACTIVITY_TECHNICIAN, ACTIVITY_DEALER_KEY, ACTIVITY_DEALER, ACTIVITY_ORDER_ID, ACTIVITY_ORDER_MODE, ACTIVITY_ORDER_STATUS, ACTIVITY_ORDER_ACTION_ID, ACTIVITY_ORDER_ACTION_STATUS, ACTIVITY_ORDER_ACTION_TYPE, ACTIVITY_ORDER_ACTION_SUBTYPE, ACTIVITY_ORDER_ACTION_LINKED, ACTIVITY_SPIN, ACTIVITY_GROUP_KEY, ATTR_BULK_TYPE, ATTR_BULK_PROFILE_NAME, ATTR_BULK_NO_SUITES, ATTR_ADDRESS_SERVICEBILITY, ATTR_ADDRESS_POSTAL_CODE, ATTR_ADDRESS_CONTRACT_GROUP, ATTR_SERVICE_TYPE, ETL_PARTITION_KEY, ETL_INSRT_DT, ETL_INSRT_RUN_ID, PRODUCT_START_DATE, PRODUCT_END_DATE, PRODUCT_DISCOUNT_START_DATE, PRODUCT_DISCOUNT_END_DATE, PROD_OT_HARDWARE_AMT, PROD_OT_PPV_AMT, PROD_OT_SERVICE_AMT, PROD_OT_INSTALLATION_AMT, PROD_OT_DISCR_ADJ_AMT, PROD_OT_NON_DISCR_ADJ_AMT, PROD_OT_OTHER_AMT, CR_KEY, CR_CLASS, COMM_BILL_ENTITY, CYCLE_CODE, CYCLE_CLOSE_DAY, CONSOLIDATED_IND, CONTRACT_CODE, CLUSTER_ID, CONTRACT_EXPIRY_DATE, ACTIVITY_FLIP_IND, ACTIVITY_ORIG_DEALER, ACTIVITY_ORIG_ORDER_ID, ACTIVITY_ORIG_ORDER_ACTION_ID, ACTIVITY_ORIG_BOOK_DATE, ACTIVITY_ORIG_CANC_DATE, PRODUCT_INSTALLATION_IND, PRODUCT_FULFILLMENT_OPTION, ACTIVITY_ORDER_BOOKED_DATE, ACTIVITY_ORDER_SCHEDULED_DATE"
+			},
+			"filter_column": {
+				"type": "string",
+				"defaultValue": "ACTIVITY_DATE"
+			},
+			"load_type": {
+				"type": "string",
+				"defaultValue": "initial"
+			},
+			"start_date": {
+				"type": "string",
+				"defaultValue": "2020/01/01"
+			},
+			"end_date": {
+				"type": "string",
+				"defaultValue": "2020/01/02"
+			},
+			"partition_column": {
+				"type": "string",
+				"defaultValue": "ACTIVITY_DATE"
+			}
+		},
+		"variables": {
+			"start_date": {
+				"type": "String"
+			},
+			"end_date": {
+				"type": "String"
+			},
+			"filter": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-08-23T16:25:49Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

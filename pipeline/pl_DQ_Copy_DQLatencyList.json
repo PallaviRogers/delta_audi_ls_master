@@ -1,0 +1,213 @@
+{
+	"name": "pl_DQ_Copy_DQLatencyList",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy DQLatencyList to ADLS",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureTableSource",
+						"additionalColumns": [
+							{
+								"name": "Insert_ts",
+								"value": {
+									"value": "@pipeline().TriggerTime",
+									"type": "Expression"
+								}
+							}
+						],
+						"azureTableSourceIgnoreTableNotFound": false
+					},
+					"sink": {
+						"type": "AzureDatabricksDeltaLakeSink",
+						"preCopyScript": "TRUNCATE TABLE DQ.DQLatencyList",
+						"importSettings": {
+							"type": "AzureDatabricksDeltaLakeImportCommand"
+						}
+					},
+					"enableStaging": true,
+					"stagingSettings": {
+						"linkedServiceName": {
+							"referenceName": "ls_audi_adls",
+							"type": "LinkedServiceReference"
+						},
+						"path": "audi/stage/"
+					},
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "PartitionKey",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PartitionKey",
+									"type": "string"
+								}
+							},
+							{
+								"source": {
+									"name": "RowKey",
+									"type": "String"
+								},
+								"sink": {
+									"name": "RowKey",
+									"type": "string"
+								}
+							},
+							{
+								"source": {
+									"name": "Timestamp",
+									"type": "DateTimeOffset"
+								},
+								"sink": {
+									"name": "Timestamp",
+									"type": "string"
+								}
+							},
+							{
+								"source": {
+									"name": "RuleId",
+									"type": "String"
+								},
+								"sink": {
+									"name": "RuleId",
+									"type": "string"
+								}
+							},
+							{
+								"source": {
+									"name": "TgtDatabase",
+									"type": "String"
+								},
+								"sink": {
+									"name": "TgtDatabase",
+									"type": "string"
+								}
+							},
+							{
+								"source": {
+									"name": "TgtSchema",
+									"type": "String"
+								},
+								"sink": {
+									"name": "TgtSchema",
+									"type": "string"
+								}
+							},
+							{
+								"source": {
+									"name": "TgtTable",
+									"type": "String"
+								},
+								"sink": {
+									"name": "TgtTable",
+									"type": "string"
+								}
+							},
+							{
+								"source": {
+									"name": "LatencyDateColumn",
+									"type": "String"
+								},
+								"sink": {
+									"name": "LatencyDateColumn",
+									"type": "string"
+								}
+							},
+							{
+								"source": {
+									"name": "LatencyDateDataType",
+									"type": "String"
+								},
+								"sink": {
+									"name": "LatencyDateDataType",
+									"type": "string"
+								}
+							},
+							{
+								"source": {
+									"name": "TgtQuery",
+									"type": "String"
+								},
+								"sink": {
+									"name": "TgtQuery",
+									"type": "string"
+								}
+							},
+							{
+								"source": {
+									"name": "ThresholdGreen",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "ThresholdGreen",
+									"type": "Int64"
+								}
+							},
+							{
+								"source": {
+									"name": "ThresholdRed",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "ThresholdRed",
+									"type": "Int64"
+								}
+							},
+							{
+								"source": {
+									"name": "ThresholdYellow",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "ThresholdYellow",
+									"type": "Int64"
+								}
+							},
+							{
+								"source": {
+									"name": "Enabled",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Enabled",
+									"type": "string"
+								}
+							}
+						]
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_tbl_DQLatencyList",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_dlt_DQLatencyList",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"folder": {
+			"name": "DQ/DQ_Latency"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-07-03T05:59:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

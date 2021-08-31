@@ -1,0 +1,306 @@
+{
+	"name": "pl_united_mlbam_load",
+	"properties": {
+		"activities": [
+			{
+				"name": "If Delta load or Historical Load",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(toUpper(pipeline().parameters.SRC_CUSTOM_WHERE_CLAUSE),'NULL')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "copy_ora_bdw_blob",
+							"description": "copy data from oracle to blob",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "OracleSource",
+									"oracleReaderQuery": {
+										"value": "@concat(pipeline().parameters.QRY, ' ', if(equals(pipeline().parameters.CURR_MAX_DELTA_COL_VALUE, 'NULL'), 'WHERE 1 = 1', concat(' WHERE ', pipeline().parameters.SRC_DELTA_COL, ' > ',replace(pipeline().parameters.CURR_MAX_DELTA_COL_VALUE_FORMAT,'###VALUE###',pipeline().parameters.CURR_MAX_DELTA_COL_VALUE)) ), if(equals('NULL', pipeline().parameters.SRC_CUSTOM_WHERE_CLAUSE), ' ', pipeline().parameters.SRC_CUSTOM_WHERE_CLAUSE))",
+										"type": "Expression"
+									},
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings",
+										"blockSizeInMB": 10
+									},
+									"formatSettings": {
+										"type": "ParquetWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_audi_ora_bdw_src",
+									"type": "DatasetReference",
+									"parameters": {
+										"schemaName": {
+											"value": "@pipeline().parameters.SCHEMA_NAME",
+											"type": "Expression"
+										},
+										"tableName": {
+											"value": "@pipeline().parameters.TABLE_NAME",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_audi_azure_blob_table_parquet",
+									"type": "DatasetReference",
+									"parameters": {
+										"container_name": {
+											"value": "@pipeline().parameters.STAGE_CONTAINER",
+											"type": "Expression"
+										},
+										"directory_name": {
+											"value": "@pipeline().parameters.STAGE_PATH",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Mlbam HIST V_SRC_COUNT_DERIVED",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "copy_ora_bdw_blob",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "V_SRC_COUNT_DERIVED",
+								"value": {
+									"value": "@string(activity('copy_ora_bdw_blob').output.dataWritten)",
+									"type": "Expression"
+								}
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "copying gz files from source mlbam",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AmazonS3ReadSettings",
+										"recursive": true,
+										"modifiedDatetimeStart": {
+											"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+											"type": "Expression"
+										},
+										"modifiedDatetimeEnd": {
+											"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+											"type": "Expression"
+										},
+										"wildcardFolderPath": {
+											"value": "@pipeline().parameters.SRC_FILE_PATH",
+											"type": "Expression"
+										},
+										"wildcardFileName": {
+											"value": "@if(equals(toUpper(pipeline().parameters.DBFS_SAVE_MODE),'APPEND'),concat(pipeline().parameters.SRC_FILE_NAME_PATTERN,'*.gz'),concat(pipeline().parameters.SRC_FILE_NAME_PATTERN,formatDateTime(utcnow(),'yyyyMMdd'),'*.gz'))",
+											"type": "Expression"
+										},
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_audi_mlbam_src",
+									"type": "DatasetReference",
+									"parameters": {
+										"s3bucketname": {
+											"value": "@pipeline().parameters.S3_BUCKET",
+											"type": "Expression"
+										},
+										"foldername": {
+											"value": "@pipeline().parameters.SRC_FILE_PATH",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_audi_adls_mlbam_snk",
+									"type": "DatasetReference",
+									"parameters": {
+										"containername": {
+											"value": "@pipeline().parameters.STAGE_CONTAINER",
+											"type": "Expression"
+										},
+										"schemaname": {
+											"value": "@pipeline().parameters.SCHEMA_NAME",
+											"type": "Expression"
+										},
+										"tablename": {
+											"value": "@pipeline().parameters.TABLE_NAME",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "S3 MLBAM V_SRC_COUNT_DERIVED",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "copying gz files from source mlbam",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "V_SRC_COUNT_DERIVED",
+								"value": {
+									"value": "@string(activity('copying gz files from source mlbam').output.dataWritten)",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"TABLE_NAME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SCHEMA_NAME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"WINDOW_END_TIME_UTC": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"WINDOW_START_TIME_UTC": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_FILE_PATH": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"STAGE_CONTAINER": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"S3_BUCKET": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"STAGE_PATH": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_CUSTOM_WHERE_CLAUSE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"QRY": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"CURR_MAX_DELTA_COL_VALUE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_DELTA_COL": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"CURR_MAX_DELTA_COL_VALUE_FORMAT": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"DBFS_SAVE_MODE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_FILE_NAME_PATTERN": {
+				"type": "string",
+				"defaultValue": "NULL"
+			}
+		},
+		"variables": {
+			"V_SRC_COUNT_DERIVED": {
+				"type": "String",
+				"defaultValue": "NULL"
+			},
+			"V_CURR_DELTA_VAL_DERIVED": {
+				"type": "String",
+				"defaultValue": "NULL"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-08-17T12:40:24Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

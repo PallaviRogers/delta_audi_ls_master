@@ -1,0 +1,103 @@
+{
+	"name": "pl_onprem_mbuadl_agg_dimension_loading",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy_data_from_mbuadl_agg",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "OrcSource",
+						"storeSettings": {
+							"type": "HdfsReadSettings",
+							"recursive": true,
+							"wildcardFileName": "*",
+							"enablePartitionDiscovery": false
+						}
+					},
+					"sink": {
+						"type": "OrcSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_audi_hdp_onprem_mbuadl_agg_src",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@pipeline().parameters.filename",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_audi_hdp_onprem_mbuadl_agg_snk",
+						"type": "DatasetReference",
+						"parameters": {
+							"directoryName": {
+								"value": "@concat('raw_mbuadl_agg/landing/',pipeline().parameters.filename)",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "load_processor",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Copy_data_from_mbuadl_agg",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/mbuadl_agg/mbuadl_agg_dimension_loader",
+					"baseParameters": {
+						"filename": {
+							"value": "@pipeline().parameters.filename",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"filename": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

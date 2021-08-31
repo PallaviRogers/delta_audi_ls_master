@@ -1,0 +1,26 @@
+{
+	"name": "ls_audi_s3_adobe_aam_outbound",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"description": "Link service to connect with adobe aam-outbound s3 bucket  ",
+		"annotations": [],
+		"type": "AmazonS3",
+		"typeProperties": {
+			"serviceUrl": "",
+			"accessKeyId": "AKIA6GM4UAIS6SIYPYHL",
+			"secretAccessKey": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_audi_kv",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "conn-audi-s3-adobe-aam-outbound"
+			},
+			"authenticationType": "AccessKey"
+		},
+		"connectVia": {
+			"referenceName": "AUDI-IR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

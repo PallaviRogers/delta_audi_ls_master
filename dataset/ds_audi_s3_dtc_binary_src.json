@@ -1,0 +1,36 @@
+{
+	"name": "ds_audi_s3_dtc_binary_src",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_s3_dtc",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"s3bucketname": {
+				"type": "string"
+			},
+			"filename": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AmazonS3Location",
+				"bucketName": {
+					"value": "@dataset().s3bucketname",
+					"type": "Expression"
+				},
+				"fileName": {
+					"value": "@dataset().filename",
+					"type": "Expression"
+				}
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

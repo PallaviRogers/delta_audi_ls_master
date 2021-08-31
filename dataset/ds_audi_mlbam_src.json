@@ -1,0 +1,43 @@
+{
+	"name": "ds_audi_mlbam_src",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_s3_MLBAM",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"s3bucketname": {
+				"type": "string"
+			},
+			"foldername": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AmazonS3Location",
+				"bucketName": {
+					"value": "@dataset().s3bucketname",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().foldername",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": "|",
+			"compressionCodec": "gzip",
+			"compressionLevel": "Optimal",
+			"escapeChar": "\\",
+			"firstRowAsHeader": false,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

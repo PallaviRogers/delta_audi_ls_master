@@ -1,0 +1,210 @@
+{
+	"name": "pl_updt_elt_execution",
+	"properties": {
+		"activities": [
+			{
+				"name": "Upd METADATA DELTA VAL Aftr Dbricks copy",
+				"description": "Upd METADATA DELTA VAL ",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureTableSource",
+						"additionalColumns": [
+							{
+								"name": "NEW_DELTA_VALUE",
+								"value": {
+									"value": "@pipeline().parameters.CURR_DELTA_VALUE",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "NEW_WINDOW_START_TIME_UTC",
+								"value": {
+									"value": "@pipeline().parameters.PREV_DELTA_VALUE",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "NEW_WINDOW_END_TIME_UTC",
+								"value": {
+									"value": "@pipeline().parameters.CURR_DELTA_VALUE",
+									"type": "Expression"
+								}
+							}
+						],
+						"azureTableSourceQuery": {
+							"value": "@concat('PartitionKey eq ''', variables('V_METADATA_DEF_PARTITION_KEY'), '''',' and JOB_NAME eq ','''', pipeline().parameters.JOB_NAME, '''')",
+							"type": "Expression"
+						},
+						"azureTableSourceIgnoreTableNotFound": false
+					},
+					"sink": {
+						"type": "AzureTableSink",
+						"azureTableInsertType": "merge",
+						"azureTableDefaultPartitionKeyValue": "DEFAULT",
+						"azureTableRowKeyName": {
+							"value": "RowKey",
+							"type": "Expression"
+						},
+						"writeBatchSize": 10000
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "PartitionKey"
+								},
+								"sink": {
+									"name": "PartitionKey",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "RowKey"
+								},
+								"sink": {
+									"name": "RowKey",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Timestamp"
+								},
+								"sink": {
+									"name": "Timestamp",
+									"type": "DateTimeOffset"
+								}
+							},
+							{
+								"source": {
+									"name": "NEW_DELTA_VALUE",
+									"type": "String"
+								},
+								"sink": {
+									"name": "CURR_MAX_DELTA_COL_VALUE",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "JOB_NAME"
+								},
+								"sink": {
+									"name": "JOB_NAME",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "SCHEMANAME"
+								},
+								"sink": {
+									"name": "SCHEMANAME",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "TABLENAME"
+								},
+								"sink": {
+									"name": "TABLENAME",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "NEW_WINDOW_END_TIME_UTC",
+									"type": "String"
+								},
+								"sink": {
+									"name": "WINDOW_END_TIME_UTC",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "NEW_WINDOW_START_TIME_UTC",
+									"type": "String"
+								},
+								"sink": {
+									"name": "WINDOW_START_TIME_UTC",
+									"type": "String"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_elt_load_control",
+						"type": "DatasetReference",
+						"parameters": {
+							"AZ_STORAGE_TABLE": {
+								"value": "@variables('V_ELT_METADATA_TABLE')",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_elt_load_control",
+						"type": "DatasetReference",
+						"parameters": {
+							"AZ_STORAGE_TABLE": {
+								"value": "@variables('V_ELT_METADATA_TABLE')",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"PREV_DELTA_VALUE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"CURR_DELTA_VALUE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"JOB_NAME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			}
+		},
+		"variables": {
+			"V_ELT_METADATA_TABLE": {
+				"type": "String",
+				"defaultValue": "EltMetadataControl"
+			},
+			"V_METADATA_DEF_PARTITION_KEY": {
+				"type": "String",
+				"defaultValue": "DEFAULT"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-04-06T17:15:20Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

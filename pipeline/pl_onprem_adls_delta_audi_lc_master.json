@@ -1,0 +1,157 @@
+{
+	"name": "pl_onprem_adls_delta_audi_lc_master",
+	"properties": {
+		"description": "adding load control logic",
+		"activities": [
+			{
+				"name": "Lookup ELT_METADATA",
+				"description": "Looks up for the job config in metadata controltable",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureTableSource",
+						"azureTableSourceQuery": {
+							"value": "@concat('PartitionKey eq ''', variables('V_METADATA_DEF_PARTITION_KEY'), '''',' and RowKey eq ','''', pipeline().parameters.JOB_NAME, '''')",
+							"type": "Expression"
+						},
+						"azureTableSourceIgnoreTableNotFound": false
+					},
+					"dataset": {
+						"referenceName": "ds_elt_load_control",
+						"type": "DatasetReference",
+						"parameters": {
+							"AZ_STORAGE_TABLE": {
+								"value": "@variables('V_ELT_METADATA_TABLE')",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Execute ELT Framework",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Lookup ELT_METADATA",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_onprem_adls_delta_audi_lc",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"TABLENAME": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.TABLENAME",
+							"type": "Expression"
+						},
+						"SCHEMANAME": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SCHEMANAME",
+							"type": "Expression"
+						},
+						"WINDOW_END_TIME_UTC": {
+							"value": "@utcnow()",
+							"type": "Expression"
+						},
+						"WINDOW_START_TIME_UTC": {
+							"value": "@if(equals(activity('Lookup ELT_METADATA').output.firstRow.CURR_MAX_DELTA_COL_VALUE, 'NULL'), '1970-01-01T00:00:00.4270896Z', activity('Lookup ELT_METADATA').output.firstRow.CURR_MAX_DELTA_COL_VALUE)",
+							"type": "Expression"
+						},
+						"CURR_MAX_DELTA_COL_VALUE": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.CURR_MAX_DELTA_COL_VALUE",
+							"type": "Expression"
+						},
+						"JOB_NAME": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.JOB_NAME",
+							"type": "Expression"
+						},
+						"EXEC_RUN_ID": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"METADATA_JSON": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow",
+							"type": "Expression"
+						},
+						"TARGET_SCHEMANAME": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.TARGET_SCHEMANAME",
+							"type": "Expression"
+						},
+						"TARGET_FOLDER": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.TARGET_FOLDER",
+							"type": "Expression"
+						},
+						"LOAD_TYPE": {
+							"value": "@if(equals(activity('Lookup ELT_METADATA').output.firstRow.CURR_MAX_DELTA_COL_VALUE, 'NULL'), 'HISTORICAL','DELTA')",
+							"type": "Expression"
+						},
+						"SRC_DELTA_COL": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SRC_DELTA_COL",
+							"type": "Expression"
+						},
+						"QRY": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.QRY",
+							"type": "Expression"
+						},
+						"SRC_CUSTOM_WHERE_CLAUSE": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SRC_CUSTOM_WHERE_CLAUSE",
+							"type": "Expression"
+						},
+						"SRC_TBL_PK_CSV": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SRC_TBL_PK_CSV",
+							"type": "Expression"
+						},
+						"SRC_TYPE": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SRC_TYPE",
+							"type": "Expression"
+						},
+						"LOAD_METHOD": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.LOAD_METHOD",
+							"type": "Expression"
+						},
+						"CURR_MAX_DELTA_COL_VALUE_FORMAT": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.CURR_MAX_DELTA_COL_VALUE_FORMAT",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"JOB_NAME": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"files": {
+				"type": "Boolean"
+			},
+			"V_ELT_METADATA_TABLE": {
+				"type": "String",
+				"defaultValue": "EltMetadataControl"
+			},
+			"V_METADATA_DEF_PARTITION_KEY": {
+				"type": "String",
+				"defaultValue": "DEFAULT"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-11T13:59:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

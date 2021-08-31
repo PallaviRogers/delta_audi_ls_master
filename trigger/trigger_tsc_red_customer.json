@@ -1,0 +1,35 @@
+{
+	"name": "trigger_tsc_red_customer",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_onprem_adls_delta_audi",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"windowStart": "1/01/1900 12:00:00 PM",
+					"windowEnd": "1/01/2099 12:00:00 PM",
+					"schemaname": "mbuadl_agg_nonpi",
+					"tablename": "tsc_red_customer"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Month",
+				"interval": 1,
+				"startTime": "2020-09-08T11:53:00Z",
+				"timeZone": "UTC",
+				"schedule": {
+					"monthDays": [
+						2
+					]
+				}
+			}
+		}
+	}
+}

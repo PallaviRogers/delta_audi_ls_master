@@ -1,0 +1,30 @@
+{
+	"name": "pl_s3_simplifi_loading",
+	"properties": {
+		"activities": [
+			{
+				"name": "load_simplifi_uuid_mapping",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/simplifi/simplifi_uuid_mapping"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,233 @@
+{
+	"name": "pl_onprem_adls_audi",
+	"properties": {
+		"description": "pipeline used to load only truncate and load tables_",
+		"activities": [
+			{
+				"name": "check new files in landing folder",
+				"type": "GetMetadata",
+				"dependsOn": [
+					{
+						"activity": "copy_onprem_to_adls",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_audi_hdp_onprem_snk",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@concat(pipeline().parameters.tablename,'/')",
+								"type": "Expression"
+							},
+							"schemaname": {
+								"value": "@pipeline().parameters.schemaname",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"exists"
+					],
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"wildcardFolderPath": "*"
+					}
+				}
+			},
+			{
+				"name": "run_notebooks",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "check new files in landing folder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('check new files in landing folder').output.exists,true)",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "send email no files in source",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/mbuadl_agg/send_email",
+								"baseParameters": {
+									"schemaname": {
+										"value": "@pipeline().parameters.schemaname",
+										"type": "Expression"
+									},
+									"filename": {
+										"value": "@pipeline().parameters.tablename",
+										"type": "Expression"
+									},
+									"pipeline_name": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"pipeline_id": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"start_date": {
+										"value": "@pipeline().TriggerTime",
+										"type": "Expression"
+									},
+									"end_date": {
+										"value": "@pipeline().TriggerTime",
+										"type": "Expression"
+									},
+									"reason": "No new files in on-prem HDFS for "
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "truncate_and_load_processor",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/mbuadl_agg/audi_truncate&load_processor",
+								"baseParameters": {
+									"filename": {
+										"value": "@pipeline().parameters.tablename",
+										"type": "Expression"
+									},
+									"schemaname": {
+										"value": "@pipeline().parameters.schemaname",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "copy_onprem_to_adls",
+				"description": ".",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "OrcSource",
+						"storeSettings": {
+							"type": "HdfsReadSettings",
+							"recursive": true,
+							"wildcardFileName": "*",
+							"enablePartitionDiscovery": false
+						}
+					},
+					"sink": {
+						"type": "OrcSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings",
+							"copyBehavior": "PreserveHierarchy"
+						},
+						"formatSettings": {
+							"type": "OrcWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_audi_hdp_onprem_src",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@pipeline().parameters.tablename",
+								"type": "Expression"
+							},
+							"schemaname": {
+								"value": "@pipeline().parameters.schemaname",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_audi_hdp_onprem_snk",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@pipeline().parameters.tablename",
+								"type": "Expression"
+							},
+							"schemaname": {
+								"value": "@pipeline().parameters.schemaname",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"schemaname": {
+				"type": "string",
+				"defaultValue": "mbuadl_agg"
+			},
+			"tablename": {
+				"type": "string",
+				"defaultValue": "cable_product_dim"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

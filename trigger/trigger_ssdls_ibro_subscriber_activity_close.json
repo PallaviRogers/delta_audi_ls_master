@@ -1,0 +1,38 @@
+{
+	"name": "trigger_ssdls_ibro_subscriber_activity_close",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_azure_audi_container_ssdls",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"source_folder": "crtd_app_ibro/ibro_subscriber_activity_close/",
+					"source_container": "curated",
+					"target_container": "rogers-eda-derived-prd-sensitive-storage",
+					"target_folder": "oracle/app_ibro/ibro_subscriber_activity_close/"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2020-12-18T01:00:00",
+				"timeZone": "Eastern Standard Time",
+				"schedule": {
+					"minutes": [
+						0
+					],
+					"hours": [
+						2
+					]
+				}
+			}
+		}
+	}
+}

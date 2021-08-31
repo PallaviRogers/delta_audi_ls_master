@@ -1,0 +1,28 @@
+{
+	"name": "ds_audi_simplifi_src",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_simplifi_s3",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"fileName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AmazonS3Location",
+				"bucketName": "aam-outbound",
+				"folderPath": "rogers/Simplifi",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				}
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

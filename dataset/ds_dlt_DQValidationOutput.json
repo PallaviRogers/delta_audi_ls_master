@@ -1,0 +1,45 @@
+{
+	"name": "ds_dlt_DQValidationOutput",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_databricks_delta",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "DQ"
+		},
+		"annotations": [],
+		"type": "AzureDatabricksDeltaLakeDataset",
+		"typeProperties": {
+			"database": "dq",
+			"table": "dqvalidationoutput"
+		},
+		"schema": [
+			{
+				"name": "RuleId",
+				"type": "integer"
+			},
+			{
+				"name": "RunDate",
+				"type": "date"
+			},
+			{
+				"name": "RunId",
+				"type": "string"
+			},
+			{
+				"name": "InsertTs",
+				"type": "timestamp"
+			},
+			{
+				"name": "ExpectedCount",
+				"type": "long"
+			},
+			{
+				"name": "ActualCount",
+				"type": "long"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

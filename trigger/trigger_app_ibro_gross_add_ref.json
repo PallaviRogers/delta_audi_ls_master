@@ -1,0 +1,41 @@
+{
+	"name": "trigger_app_ibro_gross_add_ref",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_audi_bdw_azure_tl",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schema_name": "app_ibro",
+					"src_table_name": "gross_add_ref",
+					"tgt_table_name": "gross_add_ref",
+					"column_list": "*"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2020-12-09T11:13:00",
+				"timeZone": "Pacific Standard Time",
+				"schedule": {
+					"minutes": [
+						0
+					],
+					"hours": [
+						2
+					],
+					"weekDays": [
+						"Saturday"
+					]
+				}
+			}
+		}
+	}
+}

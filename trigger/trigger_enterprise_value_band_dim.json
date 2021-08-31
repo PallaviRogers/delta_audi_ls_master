@@ -1,0 +1,35 @@
+{
+	"name": "trigger_enterprise_value_band_dim",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_audi_bdw_azure_tl",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schema_name": "enterprise",
+					"src_table_name": "value_band_dim",
+					"tgt_table_name": "value_band_dim",
+					"column_list": "*"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2020-12-07T21:53:00",
+				"timeZone": "Eastern Standard Time",
+				"schedule": {
+					"weekDays": [
+						"Saturday"
+					]
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,27 @@
+{
+	"name": "ls_audi_sftp_sfmc_SN",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "Sftp",
+		"typeProperties": {
+			"host": "ftp.s6.exacttarget.com",
+			"port": 22,
+			"skipHostKeyValidation": true,
+			"authenticationType": "Basic",
+			"userName": "6295623",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_audi_kv",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "conn-audi-sftp-sfmcSN"
+			}
+		},
+		"connectVia": {
+			"referenceName": "AUDI-IR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

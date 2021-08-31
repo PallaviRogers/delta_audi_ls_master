@@ -1,0 +1,35 @@
+{
+	"name": "ds_blob_sink_azure",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_azure_blob",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"container": {
+				"type": "string"
+			},
+			"path": {
+				"type": "string"
+			},
+			"file_date": {
+				"type": "string",
+				"defaultValue": "@utcnow('yyyy-MM-dd')"
+			}
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": {
+					"value": "@dataset().container",
+					"type": "Expression"
+				}
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,43 @@
+{
+	"name": "pl_audi_dfp_gaid_file_export",
+	"properties": {
+		"description": "Pipeline to generate gaid sync file based on device category and export same to storage path on 1st day of every month",
+		"activities": [
+			{
+				"name": "dfp_gaid_sync_file_export",
+				"description": "Notebook to generate gaid sync file based on device category and export same to storage path on 1st day of every month",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/dfp/dfp_gaid_file_generate",
+					"baseParameters": {
+						"fileType": {
+							"value": "@pipeline().parameters.file_type",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"file_type": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

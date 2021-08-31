@@ -1,0 +1,16 @@
+{
+	"name": "ds_dlt_DQ_src_template",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_databricks_delta",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "DQ"
+		},
+		"annotations": [],
+		"type": "AzureDatabricksDeltaLakeDataset",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

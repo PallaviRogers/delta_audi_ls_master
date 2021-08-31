@@ -1,0 +1,29 @@
+{
+	"name": "trigger_media_customer_info_salesforce",
+	"properties": {
+		"description": "trigger used to refresh salesforce partition in media customer info.",
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_audi_agg_media_customer_info",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"dataSource": "salesforce",
+					"loadType": "fullrefresh"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 24,
+				"startTime": "2021-04-08T14:00:00",
+				"timeZone": "Eastern Standard Time"
+			}
+		}
+	}
+}

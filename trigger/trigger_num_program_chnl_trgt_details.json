@@ -1,0 +1,29 @@
+{
+	"name": "trigger_num_program_chnl_trgt_details",
+	"properties": {
+		"description": "triggers to load mbuadl_agg.num_program_chnl_trgt_details",
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_onprem_adls_audi",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schemaname": "mbuadl_agg",
+					"tablename": "num_program_chnl_trgt_details"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 24,
+				"startTime": "2020-06-29T19:20:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

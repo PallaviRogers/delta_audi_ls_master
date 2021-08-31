@@ -1,0 +1,103 @@
+{
+	"name": "pl_onprem_dfp_landing",
+	"properties": {
+		"activities": [
+			{
+				"name": "copy_data_on_prem_hive_to_blob",
+				"description": "copy orc files from on prem hive to blob storage",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "OrcSource",
+						"storeSettings": {
+							"type": "HdfsReadSettings",
+							"recursive": true,
+							"wildcardFileName": "*",
+							"enablePartitionDiscovery": false
+						}
+					},
+					"sink": {
+						"type": "OrcSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_audi_hdp_onprem_dfp_src",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@toLower(pipeline().parameters.filename)",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_audi_hdp_onprem_dfp_snk",
+						"type": "DatasetReference",
+						"parameters": {
+							"directoryName": "raw_dfp/landing"
+						}
+					}
+				]
+			},
+			{
+				"name": "load_processor",
+				"description": "",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "copy_data_on_prem_hive_to_blob",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_onprem_dfp_loading",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"filename": {
+							"value": "@pipeline().parameters.filename",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"filename": {
+				"type": "string"
+			},
+			"start_date": {
+				"type": "string",
+				"defaultValue": "12/01/2018  00:00:00"
+			},
+			"end_date": {
+				"type": "string",
+				"defaultValue": "02/29/2020 00:00:00"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-03-22T22:20:47Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,31 @@
+{
+	"name": "trigger_redui_advt_crm_hashed_data",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipeline": {
+			"pipelineReference": {
+				"referenceName": "pl_onprem_adls_delta_audi",
+				"type": "PipelineReference"
+			},
+			"parameters": {
+				"windowStart": "@{trigger().outputs.windowStartTime}",
+				"windowEnd": "@{trigger().outputs.windowEndTime}",
+				"schemaname": "mbuadl",
+				"tablename": "redui_advt_crm_hashed_data"
+			}
+		},
+		"type": "TumblingWindowTrigger",
+		"typeProperties": {
+			"frequency": "Hour",
+			"interval": 24,
+			"startTime": "2020-12-08T14:25:00Z",
+			"delay": "00:00:00",
+			"maxConcurrency": 50,
+			"retryPolicy": {
+				"intervalInSeconds": 30
+			},
+			"dependsOn": []
+		}
+	}
+}

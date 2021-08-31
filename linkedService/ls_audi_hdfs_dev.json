@@ -1,0 +1,25 @@
+{
+	"name": "ls_audi_hdfs_dev",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "Hdfs",
+		"typeProperties": {
+			"url": "http://ehdpdd109.dev.dmt.rogers.com:50070/webhdfs/v1/",
+			"authenticationType": "Windows",
+			"userName": "serv_audi_hdfs_az_dv@RCI.ROGERS.CA",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_audi_kv",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "conn-audi-hive-dev"
+			}
+		},
+		"connectVia": {
+			"referenceName": "AUDI-IR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

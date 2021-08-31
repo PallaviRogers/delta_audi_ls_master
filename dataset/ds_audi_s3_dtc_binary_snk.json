@@ -1,0 +1,39 @@
+{
+	"name": "ds_audi_s3_dtc_binary_snk",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_adls",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"schemaname": {
+				"type": "string"
+			},
+			"tablename": {
+				"type": "string"
+			},
+			"containername": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": {
+					"value": "@concat('raw_',concat(dataset().schemaname,concat('/',concat(dataset().tablename,concat('/',concat(dataset().tablename,'_zip'))))))",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().containername",
+					"type": "Expression"
+				}
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

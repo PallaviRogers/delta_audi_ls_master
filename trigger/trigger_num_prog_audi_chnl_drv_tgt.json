@@ -1,0 +1,29 @@
+{
+	"name": "trigger_num_prog_audi_chnl_drv_tgt",
+	"properties": {
+		"description": "triggers to load mbuadl_agg.num_prog_audi_chnl_drv_tgt",
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_onprem_adls_audi",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schemaname": "mbuadl_agg",
+					"tablename": "num_prog_audi_chnl_drv_tgt"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 24,
+				"startTime": "2020-06-29T19:15:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

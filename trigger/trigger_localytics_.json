@@ -1,0 +1,32 @@
+{
+	"name": "trigger_localytics_",
+	"properties": {
+		"description": "This is to load Localytics delta from on-prem to Azure on daily basis",
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipeline": {
+			"pipelineReference": {
+				"referenceName": "pl_onprem_adls_delta_audi",
+				"type": "PipelineReference"
+			},
+			"parameters": {
+				"windowStart": "@{trigger().outputs.windowStartTime}",
+				"windowEnd": "@{trigger().outputs.windowEndTime}",
+				"schemaname": "localytics",
+				"tablename": "localytics"
+			}
+		},
+		"type": "TumblingWindowTrigger",
+		"typeProperties": {
+			"frequency": "Hour",
+			"interval": 24,
+			"startTime": "2020-12-08T23:38:00Z",
+			"delay": "00:00:00",
+			"maxConcurrency": 50,
+			"retryPolicy": {
+				"intervalInSeconds": 30
+			},
+			"dependsOn": []
+		}
+	}
+}

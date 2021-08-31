@@ -1,0 +1,29 @@
+{
+	"name": "trigger_S3_campaign_event_detail_fct",
+	"properties": {
+		"description": "triggers to ingest campaign_event_detail_fct from S3 bucket (sifi-media-rogers)",
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_s3_simplifi_campaign_event_landing",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"load_type": "incremental",
+					"start_date": "2020-01-01 00:00:00"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 24,
+				"startTime": "2020-06-29T17:00:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

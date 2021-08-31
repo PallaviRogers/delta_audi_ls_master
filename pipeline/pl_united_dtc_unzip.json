@@ -1,0 +1,182 @@
+{
+	"name": "pl_united_dtc_unzip",
+	"properties": {
+		"activities": [
+			{
+				"name": "If Zip path has any files",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(string(pipeline().parameters.V_ZIPPED_SRC_CNT_DERIVED),'0')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "Copy_S3_DTC_Unzip",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"maxConcurrentConnections": 1,
+										"recursive": true,
+										"wildcardFileName": "*",
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings",
+										"compressionProperties": {
+											"type": "ZipDeflateReadSettings",
+											"preserveZipFileNameAsFolder": false
+										}
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings",
+										"maxConcurrentConnections": 1
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_csv_unzip_audi_adls_src",
+									"type": "DatasetReference",
+									"parameters": {
+										"schemaname": {
+											"value": "@pipeline().parameters.SCHEMA_NAME",
+											"type": "Expression"
+										},
+										"tablename": {
+											"value": "@pipeline().parameters.TABLE_NAME",
+											"type": "Expression"
+										},
+										"containername": {
+											"value": "@pipeline().parameters.STAGE_CONTAINER",
+											"type": "Expression"
+										},
+										"header": {
+											"value": "@pipeline().parameters.SRC_FILE_HEADER",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_csv_audi_adls_neulion_unzip_snk",
+									"type": "DatasetReference",
+									"parameters": {
+										"schemaname": {
+											"value": "@pipeline().parameters.SCHEMA_NAME",
+											"type": "Expression"
+										},
+										"tablename": {
+											"value": "@pipeline().parameters.TABLE_NAME",
+											"type": "Expression"
+										},
+										"containername": {
+											"value": "@pipeline().parameters.STAGE_CONTAINER",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "DTC Unzipped V_SRC_COUNT_DERIVED",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Copy_S3_DTC_Unzip",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "V_SRC_COUNT_DERIVED",
+								"value": {
+									"value": "@string(activity('Copy_S3_DTC_Unzip').output.dataWritten)",
+									"type": "Expression"
+								}
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "DTC Zipped V_SRC_COUNT_DERIVED",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "V_SRC_COUNT_DERIVED",
+								"value": {
+									"value": "@pipeline().parameters.V_ZIPPED_SRC_CNT_DERIVED",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"V_ZIPPED_SRC_CNT_DERIVED": {
+				"type": "string"
+			},
+			"SCHEMA_NAME": {
+				"type": "string"
+			},
+			"TABLE_NAME": {
+				"type": "string"
+			},
+			"STAGE_CONTAINER": {
+				"type": "string"
+			},
+			"SRC_FILE_HEADER": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"V_SRC_COUNT_DERIVED": {
+				"type": "String",
+				"defaultValue": "NULL"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-08-31T04:34:29Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

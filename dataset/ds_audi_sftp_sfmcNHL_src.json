@@ -1,0 +1,189 @@
+{
+	"name": "ds_audi_sftp_sfmcNHL_src",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_sftp_sfmc_NHL",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"foldername": {
+				"type": "string"
+			},
+			"header": {
+				"type": "bool"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "SftpLocation",
+				"folderPath": {
+					"value": "@dataset().foldername",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": {
+				"value": "@dataset().header",
+				"type": "Expression"
+			},
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "Guid",
+				"type": "String"
+			},
+			{
+				"name": "SubscriberKey",
+				"type": "String"
+			},
+			{
+				"name": "FirstName",
+				"type": "String"
+			},
+			{
+				"name": "LastName",
+				"type": "String"
+			},
+			{
+				"name": "LanguagePreference",
+				"type": "String"
+			},
+			{
+				"name": "AutoRenewalStatus",
+				"type": "String"
+			},
+			{
+				"name": "Province",
+				"type": "String"
+			},
+			{
+				"name": "ProductPackage",
+				"type": "String"
+			},
+			{
+				"name": "ZuoraConfirmation",
+				"type": "String"
+			},
+			{
+				"name": "PromoCode",
+				"type": "String"
+			},
+			{
+				"name": "Username",
+				"type": "String"
+			},
+			{
+				"name": "RegistrationDate",
+				"type": "String"
+			},
+			{
+				"name": "LastLoginDate",
+				"type": "String"
+			},
+			{
+				"name": "TrialStartDate",
+				"type": "String"
+			},
+			{
+				"name": "TrialEndDate",
+				"type": "String"
+			},
+			{
+				"name": "PaidStartDate",
+				"type": "String"
+			},
+			{
+				"name": "PaidEndDate",
+				"type": "String"
+			},
+			{
+				"name": "CancellationDate",
+				"type": "String"
+			},
+			{
+				"name": "EmailAddress",
+				"type": "String"
+			},
+			{
+				"name": "PurchaseStatus",
+				"type": "String"
+			},
+			{
+				"name": "ChargeAmount",
+				"type": "String"
+			},
+			{
+				"name": "Hst",
+				"type": "String"
+			},
+			{
+				"name": "Pst",
+				"type": "String"
+			},
+			{
+				"name": "Gst",
+				"type": "String"
+			},
+			{
+				"name": "Qst",
+				"type": "String"
+			},
+			{
+				"name": "CaslData",
+				"type": "String"
+			},
+			{
+				"name": "PromotionName",
+				"type": "String"
+			},
+			{
+				"name": "PromoCodeStartDate",
+				"type": "String"
+			},
+			{
+				"name": "PromoCodeEndDate",
+				"type": "String"
+			},
+			{
+				"name": "CampaignCode",
+				"type": "String"
+			},
+			{
+				"name": "RefundAmount",
+				"type": "String"
+			},
+			{
+				"name": "RefundHst",
+				"type": "String"
+			},
+			{
+				"name": "RefundGst",
+				"type": "String"
+			},
+			{
+				"name": "RefundPst",
+				"type": "String"
+			},
+			{
+				"name": "RefundQst",
+				"type": "String"
+			},
+			{
+				"name": "PendingPaymentDate",
+				"type": "String"
+			},
+			{
+				"name": "BasePrice",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

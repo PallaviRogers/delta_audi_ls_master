@@ -1,0 +1,75 @@
+{
+	"name": "pl_onprem_dfp_master_impressions",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach_Interval",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.DateRange",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "pl_onprem_dfp_landing",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_onprem_dfp_landing",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"filename": {
+										"value": "@pipeline().parameters.filename",
+										"type": "Expression"
+									},
+									"start_date": {
+										"value": "@substring(toLower(item()),0,19)",
+										"type": "Expression"
+									},
+									"end_date": {
+										"value": "@substring(toLower(item()),20,19)",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"filename": {
+				"type": "string",
+				"defaultValue": [
+					"NetworkImpressions",
+					"NetworkImpressions_audiencesegment",
+					"NetworkImpressions_customtargeting",
+					"NetworkBackfillImpressions",
+					"NetworkBackfillImpressions_audiencesegment",
+					"NetworkBackfillImpressions_customtargeting"
+				]
+			},
+			"DateRange": {
+				"type": "array",
+				"defaultValue": [
+					"12/01/2018 00:00:00,02/28/2019 00:00:00",
+					"03/01/2019 00:00:00,05/31/2019 00:00:00",
+					"06/01/2019 00:00:00,08/31/2019 00:00:00",
+					"09/01/2019 00:00:00,11/30/2019 00:00:00",
+					"12/01/2019 00:00:00,02/29/2020 00:00:00"
+				]
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-03-22T22:20:47Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,50 @@
+{
+	"name": "ds_csv_audi_adls_dtc_unzip_snk",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_adls",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"schemaname": {
+				"type": "string"
+			},
+			"tablename": {
+				"type": "string"
+			},
+			"containername": {
+				"type": "string"
+			},
+			"header": {
+				"type": "bool"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": {
+					"value": "@concat('raw_',concat(dataset().schemaname,concat('/',concat(dataset().tablename,concat('/',concat(dataset().tablename,'_stage'))))))",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().containername",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": {
+				"value": "@dataset().header",
+				"type": "Expression"
+			},
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

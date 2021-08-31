@@ -1,0 +1,9 @@
+{
+	"name": "mazcacdmtqa1308audiadf01",
+	"location": "canadacentral",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "6b922ff5-4c57-42be-ba7b-2ee0ce4aee09",
+		"tenantId": "0ab4cbbf-4bc7-4826-b52c-a14fed5286b9"
+	}
+}

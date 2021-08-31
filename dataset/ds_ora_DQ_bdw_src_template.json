@@ -1,0 +1,16 @@
+{
+	"name": "ds_ora_DQ_bdw_src_template",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_onprem_bdw",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "DQ"
+		},
+		"annotations": [],
+		"type": "OracleTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

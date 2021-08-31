@@ -1,0 +1,440 @@
+{
+	"name": "pl_gcs_s3_dfp_landing",
+	"properties": {
+		"description": "Copy Networkbackfillclicks files from google cloud storage(S3 bucket) to azure blob storage.",
+		"activities": [
+			{
+				"name": "check_for_load_type",
+				"description": "This processor will check whether the parameter passed to the pipeline is \"initial\" or \"incremental\". According to the parameter, values for start_date and end_date will be set up.",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.load_type,'initial')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "get_delta_date",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/dfp/dfp_to_adf_parameter",
+								"baseParameters": {
+									"filename": {
+										"value": "@pipeline().parameters.filename",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "start_date",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "get_delta_date",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "start_date_true",
+								"value": {
+									"value": "@convertToUtc(activity('get_delta_date').Output.runOutPut, 'Eastern Standard Time')",
+									"type": "Expression"
+								}
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "start_date_true",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "start_date_true",
+								"value": {
+									"value": "@pipeline().parameters.start_date",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "modified_start_date",
+				"description": "depending upon if condition, start date will be selected. ",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "check_for_load_type",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "start_date",
+					"value": {
+						"value": "@variables('start_date_true')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "modified_end_date",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "end_date",
+					"value": {
+						"value": "@concat(formatDateTime(utcnow(), 'yyyy-MM-dd'),' 04:00:00.000Z')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "list_csv_files",
+				"description": "list selected source file between start date and end date",
+				"type": "GetMetadata",
+				"dependsOn": [
+					{
+						"activity": "modified_start_date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "modified_end_date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_audi_gcs_s3_src",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": "gdfp-7326",
+							"fileName": {
+								"value": "@concat(pipeline().parameters.filename,'*')",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "GoogleCloudStorageReadSettings",
+						"recursive": true,
+						"modifiedDatetimeStart": {
+							"value": "@variables('start_date')",
+							"type": "Expression"
+						},
+						"modifiedDatetimeEnd": {
+							"value": "@variables('end_date')",
+							"type": "Expression"
+						}
+					},
+					"formatSettings": {
+						"type": "BinaryReadSettings"
+					}
+				}
+			},
+			{
+				"name": "If Condition1",
+				"description": "count number of files  and if new files are present then list all files. ",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "list_csv_files",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greaterOrEquals(length(activity('list_csv_files').output.childItems),1)",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "send_emails_if_no_files",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/dfp/send_email",
+								"baseParameters": {
+									"filename": {
+										"value": "@pipeline().parameters.filename",
+										"type": "Expression"
+									},
+									"pipeline_name": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"pipeline_id": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"activity_output": {
+										"value": "@string(length(activity('list_csv_files').output.childItems))",
+										"type": "Expression"
+									},
+									"start_date": {
+										"value": "@activity('modified_start_date').value",
+										"type": "Expression"
+									},
+									"end_date": {
+										"value": "@activity('modified_end_date').value",
+										"type": "Expression"
+									},
+									"source": {
+										"value": "dfp",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "list_csv_files_to_load",
+							"description": "list all csv files to load",
+							"type": "GetMetadata",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "ds_audi_gcs_s3_src",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": "gdfp-7326",
+										"fileName": {
+											"value": "@concat(pipeline().parameters.filename,'*')",
+											"type": "Expression"
+										}
+									}
+								},
+								"fieldList": [
+									"childItems"
+								],
+								"storeSettings": {
+									"type": "GoogleCloudStorageReadSettings",
+									"recursive": true,
+									"modifiedDatetimeStart": {
+										"value": "@variables('start_date')",
+										"type": "Expression"
+									},
+									"modifiedDatetimeEnd": {
+										"value": "@variables('end_date')",
+										"type": "Expression"
+									}
+								},
+								"formatSettings": {
+									"type": "BinaryReadSettings"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "If Condition1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('list_csv_files_to_load').output.childItems",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "download_files",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "BinarySource",
+									"storeSettings": {
+										"type": "GoogleCloudStorageReadSettings",
+										"recursive": true,
+										"modifiedDatetimeStart": {
+											"value": "@variables('start_date')",
+											"type": "Expression"
+										},
+										"modifiedDatetimeEnd": {
+											"value": "@variables('end_date')",
+											"type": "Expression"
+										},
+										"wildcardFileName": {
+											"value": "@{item().name}",
+											"type": "Expression"
+										},
+										"deleteFilesAfterCompletion": false
+									},
+									"formatSettings": {
+										"type": "BinaryReadSettings"
+									}
+								},
+								"sink": {
+									"type": "BinarySink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_audi_gcs_s3_src",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": "gdfp-7326",
+										"fileName": {
+											"value": "@item().name",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_audi_azure_blob_snk",
+									"type": "DatasetReference",
+									"parameters": {
+										"directoryName": "raw_dfp/landing"
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "load_processor",
+				"description": "execute notebook to process  files ",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ForEach1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_gcs_s3_dfp_loading",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"filename": {
+							"value": "@pipeline().parameters.filename",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"load_type": {
+				"type": "string"
+			},
+			"start_date": {
+				"type": "string",
+				"defaultValue": "02/10/2020 00:00:00"
+			},
+			"filename": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"start_date": {
+				"type": "String"
+			},
+			"end_date": {
+				"type": "String"
+			},
+			"file_count": {
+				"type": "String"
+			},
+			"start_date_true": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:14Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

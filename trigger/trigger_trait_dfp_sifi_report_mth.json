@@ -1,0 +1,45 @@
+{
+	"name": "trigger_trait_dfp_sifi_report_mth",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_onprem_adls_delta_audi",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"windowStart": "1/01/1900 12:00:00 PM",
+					"windowEnd": "1/01/2099 12:00:00 PM",
+					"schemaname": "mbuadl_agg",
+					"tablename": "trait_dfp_sifi_report_mth"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Month",
+				"interval": 1,
+				"startTime": "2020-12-08T12:06:00",
+				"timeZone": "Eastern Standard Time",
+				"schedule": {
+					"minutes": [
+						0
+					],
+					"hours": [
+						22
+					],
+					"monthDays": [
+						2,
+						4,
+						1,
+						3,
+						5
+					]
+				}
+			}
+		}
+	}
+}

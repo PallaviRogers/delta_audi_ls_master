@@ -1,0 +1,42 @@
+{
+	"name": "trigger_ela_v21_subscriber",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_audi_ela_azure",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schema_name": "ela_v21",
+					"src_table_name": "subscriber",
+					"column_list": "DMT_CRYPTO.TOKENIZE(subscriber_no, 'K1') as subscriber_no,effective_date,INIT_ACTIVATION_DATE,sub_status,product_type, sub_bill_lang,sub_feature_lang",
+					"tgt_table_name": "subscriber_audi",
+					"filter_condition": " where nvl(gg_op_type,'I') <>'D'"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2020-12-08T12:45:00",
+				"timeZone": "Eastern Standard Time",
+				"schedule": {
+					"minutes": [
+						0
+					],
+					"hours": [
+						3
+					],
+					"weekDays": [
+						"Saturday"
+					]
+				}
+			}
+		}
+	}
+}

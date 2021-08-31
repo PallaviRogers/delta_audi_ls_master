@@ -1,0 +1,42 @@
+{
+	"name": "trigger_ela_v21_credit_history",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_audi_ela_azure",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schema_name": "ela_v21",
+					"src_table_name": "credit_history",
+					"column_list": "/*+parallel(8)*/ DMT_CRYPTO.TOKENIZE(BAN, 'K1') as BAN,CREDIT_CLASS,CRD_SEQ_NO",
+					"tgt_table_name": "credit_history_audi",
+					"filter_condition": " where nvl(GG_op_type,'I')<>'D'"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2021-01-27T15:43:00",
+				"timeZone": "Eastern Standard Time",
+				"schedule": {
+					"minutes": [
+						50
+					],
+					"hours": [
+						14
+					],
+					"weekDays": [
+						"Sunday"
+					]
+				}
+			}
+		}
+	}
+}

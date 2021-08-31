@@ -1,0 +1,42 @@
+{
+	"name": "trigger_ela_v21_idv_ban",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_audi_ela_azure",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schema_name": "ela_v21",
+					"src_table_name": "idv_ban",
+					"column_list": "DMT_CRYPTO.TOKENIZE(BAN, 'K1') as BAN, IDV_COMPANY_CODE, IDV_BAN_STS",
+					"tgt_table_name": "idv_ban_audi",
+					"filter_condition": "  where nvl(GG_op_type,'I')<>'D'"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2021-01-28T15:28:00",
+				"timeZone": "Eastern Standard Time",
+				"schedule": {
+					"minutes": [
+						0
+					],
+					"hours": [
+						14
+					],
+					"weekDays": [
+						"Sunday"
+					]
+				}
+			}
+		}
+	}
+}

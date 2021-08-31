@@ -1,0 +1,518 @@
+{
+	"name": "pl_united_master",
+	"properties": {
+		"description": "adding load control logic",
+		"activities": [
+			{
+				"name": "Lookup ELT_METADATA",
+				"description": "Looks up for the job config in metadata controltable",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Set V_LOAD_START_TIME",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureTableSource",
+						"azureTableSourceQuery": {
+							"value": "@concat('PartitionKey eq ''', variables('V_METADATA_DEF_PARTITION_KEY'), '''',' and RowKey eq ','''', pipeline().parameters.JOB_NAME, '''')",
+							"type": "Expression"
+						},
+						"azureTableSourceIgnoreTableNotFound": false
+					},
+					"dataset": {
+						"referenceName": "ds_elt_load_control",
+						"type": "DatasetReference",
+						"parameters": {
+							"AZ_STORAGE_TABLE": {
+								"value": "@variables('V_ELT_METADATA_TABLE')",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Execute ELT Framework",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Lookup ELT_METADATA",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_united_child",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"TABLE_NAME": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.TABLE_NAME",
+							"type": "Expression"
+						},
+						"SCHEMA_NAME": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SCHEMA_NAME",
+							"type": "Expression"
+						},
+						"WINDOW_END_TIME_UTC": {
+							"value": "@utcnow()",
+							"type": "Expression"
+						},
+						"WINDOW_START_TIME_UTC": {
+							"value": "@if(equals(activity('Lookup ELT_METADATA').output.firstRow.CURR_MAX_DELTA_COL_VALUE, 'NULL'), '1970-01-01T00:00:00.4270896Z', activity('Lookup ELT_METADATA').output.firstRow.CURR_MAX_DELTA_COL_VALUE)",
+							"type": "Expression"
+						},
+						"CURR_MAX_DELTA_COL_VALUE": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.CURR_MAX_DELTA_COL_VALUE",
+							"type": "Expression"
+						},
+						"JOB_NAME": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.JOB_NAME",
+							"type": "Expression"
+						},
+						"EXEC_RUN_ID": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"METADATA_JSON": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow",
+							"type": "Expression"
+						},
+						"TARGET_SCHEMANAME": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.TARGET_SCHEMANAME",
+							"type": "Expression"
+						},
+						"TARGET_FOLDER": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.TARGET_FOLDER",
+							"type": "Expression"
+						},
+						"LOAD_TYPE": {
+							"value": "@if(equals(activity('Lookup ELT_METADATA').output.firstRow.CURR_MAX_DELTA_COL_VALUE, 'NULL'), 'HISTORICAL','DELTA')",
+							"type": "Expression"
+						},
+						"SRC_TYPE": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SRC_TYPE",
+							"type": "Expression"
+						},
+						"LOAD_METHOD": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.LOAD_METHOD",
+							"type": "Expression"
+						},
+						"SRC_FILE_PATH": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SRC_FILE_PATH",
+							"type": "Expression"
+						},
+						"NOTEBOOK_PATH": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.NOTEBOOK_PATH",
+							"type": "Expression"
+						},
+						"LOAD_CONTROL_TABLE": {
+							"value": "@variables('V_ELT_METADATA_TABLE')",
+							"type": "Expression"
+						},
+						"STAGE_CONTAINER": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.STAGE_CONTAINER",
+							"type": "Expression"
+						},
+						"S3_BUCKET": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.S3_BUCKET",
+							"type": "Expression"
+						},
+						"STAGE_PATH": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.STAGE_PATH",
+							"type": "Expression"
+						},
+						"ARCHIVE_CONTAINER": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.ARCHIVE_CONTAINER",
+							"type": "Expression"
+						},
+						"ARCHIVE_PATH": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.ARCHIVE_PATH",
+							"type": "Expression"
+						},
+						"DEST_TYPE": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.DEST_TYPE",
+							"type": "Expression"
+						},
+						"PROCESS_CONTROL_TABLE": {
+							"value": "@variables('V_ELT_PROCESS_TABLE')",
+							"type": "Expression"
+						},
+						"LOAD_START_TIME": {
+							"value": "@variables('V_LOAD_START_TIME')",
+							"type": "Expression"
+						},
+						"SRC_CUSTOM_WHERE_CLAUSE": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SRC_CUSTOM_WHERE_CLAUSE",
+							"type": "Expression"
+						},
+						"QRY": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.QRY",
+							"type": "Expression"
+						},
+						"SRC_DELTA_COL": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SRC_DELTA_COL",
+							"type": "Expression"
+						},
+						"CURR_MAX_DELTA_COL_VALUE_FORMAT": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.CURR_MAX_DELTA_COL_VALUE_FORMAT",
+							"type": "Expression"
+						},
+						"SRC_COMPRESSION_FORMAT": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SRC_COMPRESSION_FORMAT",
+							"type": "Expression"
+						},
+						"SRC_FILE_HEADER": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SRC_FILE_HEADER",
+							"type": "Expression"
+						},
+						"DBFS_SAVE_MODE": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.DBFS_SAVE_MODE",
+							"type": "Expression"
+						},
+						"SRC_FILE_NAME_PATTERN": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SRC_FILE_NAME_PATTERN",
+							"type": "Expression"
+						},
+						"SKIP_LINES": {
+							"value": "@activity('Lookup ELT_METADATA').output.firstRow.SKIP_LINES",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Insert process control table",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Lookup ELT_METADATA",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureTableSource",
+						"additionalColumns": [
+							{
+								"name": "RUN_STATUS",
+								"value": "STARTED"
+							},
+							{
+								"name": "RUN_ID",
+								"value": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "RUN_MESSAGE",
+								"value": "Starting to invoke the PL_UNITED_CHILD"
+							},
+							{
+								"name": "LOAD_START_TIME",
+								"value": {
+									"value": "@variables('V_LOAD_START_TIME')",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "LOAD_END_TIME",
+								"value": {
+									"value": "@utcnow()",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "ROWS_PROCESSED",
+								"value": "NA"
+							}
+						],
+						"azureTableSourceQuery": {
+							"value": "@concat('PartitionKey eq ''', variables('V_METADATA_DEF_PARTITION_KEY'), '''',' and RowKey eq ','''', pipeline().parameters.JOB_NAME, '''')",
+							"type": "Expression"
+						},
+						"azureTableSourceIgnoreTableNotFound": false
+					},
+					"sink": {
+						"type": "AzureTableSink",
+						"azureTableInsertType": "merge",
+						"azureTableDefaultPartitionKeyValue": {
+							"value": "@pipeline().parameters.JOB_NAME",
+							"type": "Expression"
+						},
+						"writeBatchSize": 10000
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "PartitionKey",
+									"type": "String"
+								},
+								"sink": {
+									"name": "PartitionKey",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "RowKey",
+									"type": "String"
+								},
+								"sink": {
+									"name": "RowKey",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Timestamp",
+									"type": "DateTimeOffset"
+								},
+								"sink": {
+									"name": "Timestamp",
+									"type": "DateTimeOffset"
+								}
+							},
+							{
+								"source": {
+									"name": "RUN_ID",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EXEC_ID",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "RUN_MESSAGE",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MESSAGE",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "RUN_STATUS",
+									"type": "String"
+								},
+								"sink": {
+									"name": "STATUS",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "LOAD_END_TIME",
+									"type": "String"
+								},
+								"sink": {
+									"name": "LOAD_END_TIME",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "WINDOW_START_TIME_UTC",
+									"type": "String"
+								},
+								"sink": {
+									"name": "WINDOW_START_TIME",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "WINDOW_END_TIME_UTC",
+									"type": "String"
+								},
+								"sink": {
+									"name": "WINDOW_END_TIME",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ROWS_PROCESSED",
+									"type": "String"
+								},
+								"sink": {
+									"name": "ROWS_PROCESSED",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "LOAD_START_TIME",
+									"type": "String"
+								},
+								"sink": {
+									"name": "LOAD_START_TIME",
+									"type": "String"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_elt_load_control",
+						"type": "DatasetReference",
+						"parameters": {
+							"AZ_STORAGE_TABLE": {
+								"value": "@variables('V_ELT_METADATA_TABLE')",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_elt_load_control",
+						"type": "DatasetReference",
+						"parameters": {
+							"AZ_STORAGE_TABLE": {
+								"value": "@variables('V_ELT_PROCESS_TABLE')",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Failure Exception",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Execute ELT Framework",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_updt_unitedloadcontrol",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"PREV_DELTA_VALUE": "NULL",
+						"CURR_DELTA_VALUE": {
+							"value": "@variables('V_NEW_DELTA_VALUE')",
+							"type": "Expression"
+						},
+						"JOB_NAME": {
+							"value": "@pipeline().parameters.JOB_NAME",
+							"type": "Expression"
+						},
+						"LOAD_CONTROL_TABLE": {
+							"value": "@variables('V_ELT_METADATA_TABLE')",
+							"type": "Expression"
+						},
+						"RUN_STATUS": "FAILED",
+						"RUN_MESSAGE": {
+							"value": "@{activity('Execute ELT Framework').Error.Message}",
+							"type": "Expression"
+						},
+						"EXEC_ID": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"PROCESS_CONTROL_TABLE": {
+							"value": "@variables('V_ELT_PROCESS_TABLE')",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Set V_LOAD_START_TIME",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "V_LOAD_START_TIME",
+					"value": {
+						"value": "@utcnow()",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"JOB_NAME": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"files": {
+				"type": "Boolean"
+			},
+			"V_ELT_METADATA_TABLE": {
+				"type": "String",
+				"defaultValue": "UnitedLoadControl"
+			},
+			"V_METADATA_DEF_PARTITION_KEY": {
+				"type": "String",
+				"defaultValue": "DEFAULT"
+			},
+			"V_ELT_PROCESS_TABLE": {
+				"type": "String",
+				"defaultValue": "UnitedProcessControl"
+			},
+			"V_NEW_DELTA_VALUE": {
+				"type": "String",
+				"defaultValue": "NULL"
+			},
+			"V_LOAD_START_TIME": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-08-23T16:25:49Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

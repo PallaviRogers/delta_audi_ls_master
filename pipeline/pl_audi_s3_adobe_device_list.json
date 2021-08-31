@@ -1,0 +1,923 @@
+{
+	"name": "pl_audi_s3_adobe_device_list",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get Metadata1",
+				"description": "This is to get all file names in aam-outbound/rogers/DeviceId folder from S3",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_audi_s3_adobe_deviceid",
+						"type": "DatasetReference"
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AmazonS3ReadSettings",
+						"recursive": true
+					},
+					"formatSettings": {
+						"type": "BinaryReadSettings"
+					}
+				}
+			},
+			{
+				"name": "Filter",
+				"description": "This is to filter all file names based on parameters \nsource_system = S3_95266_722 for GAID\nsource_system = S3_95264_722 for MAID\n\nUsed another parameter,\" file_count_greaterthan\" to filter some files who has filename greater than the paremeter value instead of verifying all. It helps to speed up the process",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Get Metadata1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get Metadata1').output.childitems",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@and(contains(item().name,pipeline().parameters.source_system),greater(int(substring(string(item()),add(indexof(string(item()),'-'),1),sub(indexof(string(item()),'.'),add(indexof(string(item()),'-'),1)))),int(pipeline().parameters.file_count_greaterthan)))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEach_mod0",
+				"description": "This will send each file name with previous filename get max value... compare only file id part",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "mod0",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('mod0').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "mod0_curr",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "curr_m0",
+								"value": {
+									"value": "@string(substring(string(item()),add(indexof(string(item()),'-'),1),sub(indexof(string(item()),'.'),\nadd(indexof(string(item()),'-'),1))))",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "mod0_max",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "mod0_curr",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "max_m0",
+								"value": {
+									"value": "@string(max(int(variables('curr_m0')),int(variables('prev_m0'))))",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "mod0_prev",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "mod0_max",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "prev_m0",
+								"value": {
+									"value": "@variables('max_m0')",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "out0_m0",
+				"description": "Get max value assigned from this flow",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "ForEach_mod0",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "out_m0",
+					"value": {
+						"value": "@variables('prev_m0')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "mod0",
+				"description": "To speed up the process, mod file id and split the process in 4 flows",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Filter",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Filter').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(mod(int(substring(string(item().name),18,9)),4),0)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEach_mod1",
+				"description": "This will send each file name with previous filename get max value... compare only file id part",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "mod1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('mod1').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "mod1_curr",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "curr_m1",
+								"value": {
+									"value": "@string(substring(string(item()),add(indexof(string(item()),'-'),1),sub(indexof(string(item()),'.'),\nadd(indexof(string(item()),'-'),1))))",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "mod1_max",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "mod1_curr",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "max_m1",
+								"value": {
+									"value": "@string(max(int(variables('curr_m1')),int(variables('prev_m1'))))",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "mod1_prev",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "mod1_max",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "prev_m1",
+								"value": {
+									"value": "@variables('max_m1')",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "out1_m1",
+				"description": "Get max value assigned from this flow",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "ForEach_mod1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "out_m1",
+					"value": {
+						"value": "@variables('prev_m1')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "mod1",
+				"description": "To speed up the process, mod file id and split the process in 4 flows",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Filter",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Filter').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(mod(int(substring(string(item().name),18,9)),4),1)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEach_mod2",
+				"description": "This will send each file name with previous filename get max value... compare only file id part",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "mod2",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('mod2').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "mod2_curr",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "curr_m2",
+								"value": {
+									"value": "@string(substring(string(item()),add(indexof(string(item()),'-'),1),sub(indexof(string(item()),'.'),\nadd(indexof(string(item()),'-'),1))))",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "mod2_max",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "mod2_curr",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "max_m2",
+								"value": {
+									"value": "@string(max(int(variables('curr_m2')),int(variables('prev_m2'))))",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "mod2_prev",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "mod2_max",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "prev_m2",
+								"value": {
+									"value": "@variables('max_m2')",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "out2_m2",
+				"description": "Get max value assigned from this flow",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "ForEach_mod2",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "out_m2",
+					"value": {
+						"value": "@variables('prev_m2')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "mod2",
+				"description": "To speed up the process, mod file id and split the process in 4 flows",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Filter",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Filter').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(mod(int(substring(string(item().name),18,9)),4),2)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "final_max",
+				"description": "Get max file id value by comparing all max file id of each flow",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "out1_m1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "out0_m0",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "out2_m2",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "out3_m3",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "final_max",
+					"value": {
+						"value": "@string(max(int(variables('out_m0')),int(variables('out_m1')),int(variables('out_m2'))))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEach_mod3",
+				"description": "This will send each file name with previous filename get max value... compare only file id part",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "mod3",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('mod3').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "mod3_curr",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "curr_m3",
+								"value": {
+									"value": "@string(substring(string(item()),add(indexof(string(item()),'-'),1),sub(indexof(string(item()),'.'),\nadd(indexof(string(item()),'-'),1))))",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "mod3_max",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "mod3_curr",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "max_m3",
+								"value": {
+									"value": "@string(max(int(variables('curr_m3')),int(variables('prev_m3'))))",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "mod3_prev",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "mod3_max",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "prev_m3",
+								"value": {
+									"value": "@variables('max_m3')",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "out3_m3",
+				"description": "Get max value assigned from this flow",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "ForEach_mod3",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "out_m2",
+					"value": {
+						"value": "@variables('prev_m3')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "mod3",
+				"description": "To speed up the process, mod file id and split the process in 4 flows",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Filter",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Filter').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(mod(int(substring(string(item().name),18,9)),4),3)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "file_name",
+				"description": "Get the unique value of the day and define the final wildcard file name",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "fl_filename",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "fname",
+					"value": {
+						"value": "@string(substring(string(activity('fl_filename').output.value[0]),9,31))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "fl_filename",
+				"description": "Filter the file name which has the max file id value",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "final_max",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Filter').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@and(contains(item().name,pipeline().parameters.source_system),contains(item().name,variables('final_max')))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "adobe_device_file_copy",
+				"description": "Copy the files from source to target",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "file_name",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [
+					{
+						"name": "Source",
+						"value": "aam-outbound/rogers/DeviceId/"
+					},
+					{
+						"name": "Destination",
+						"value": "@{'audi'}/@{concat('raw_zeotap/landing/',pipeline().parameters.src_directory_name,'_',pipeline().parameters.file_type)}/"
+					}
+				],
+				"typeProperties": {
+					"source": {
+						"type": "BinarySource",
+						"storeSettings": {
+							"type": "AmazonS3ReadSettings",
+							"recursive": true,
+							"wildcardFolderPath": "rogers/DeviceId",
+							"wildcardFileName": {
+								"value": "@concat(variables('fname'),'*')",
+								"type": "Expression"
+							}
+						},
+						"formatSettings": {
+							"type": "BinaryReadSettings"
+						}
+					},
+					"sink": {
+						"type": "BinarySink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"enableSkipIncompatibleRow": false,
+					"skipErrorFile": {
+						"fileMissing": false,
+						"fileForbidden": false
+					},
+					"validateDataConsistency": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_audi_s3_adobe_deviceid",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_audi_azure_blob_sink",
+						"type": "DatasetReference",
+						"parameters": {
+							"directoryName": {
+								"value": "@concat('raw_adobe_lnd/',pipeline().parameters.src_directory_name,'_',pipeline().parameters.file_type)",
+								"type": "Expression"
+							},
+							"container_name": "raw"
+						}
+					}
+				]
+			},
+			{
+				"name": "Notebook1",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "adobe_device_file_copy",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/zeotap/adobe_deviceidlist_load",
+					"baseParameters": {
+						"category": "adobe",
+						"file_type": {
+							"value": "@pipeline().parameters.file_type",
+							"type": "Expression"
+						},
+						"folder": {
+							"value": "@pipeline().parameters.folder",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "copy_raw_adobe_stg_raw_adobe",
+				"description": "copy_from raw_adobe_stg to raw_adobe as bkp",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Notebook1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [
+					{
+						"name": "Source",
+						"value": "aam-outbound/rogers/DeviceId/"
+					},
+					{
+						"name": "Destination",
+						"value": "@{'audi'}/@{concat('raw_zeotap/landing/',pipeline().parameters.src_directory_name,'_',pipeline().parameters.file_type)}/"
+					}
+				],
+				"typeProperties": {
+					"source": {
+						"type": "BinarySource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"deleteFilesAfterCompletion": true
+						},
+						"formatSettings": {
+							"type": "BinaryReadSettings"
+						}
+					},
+					"sink": {
+						"type": "BinarySink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"enableSkipIncompatibleRow": false,
+					"skipErrorFile": {
+						"fileMissing": false,
+						"fileForbidden": false
+					},
+					"validateDataConsistency": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_audi_azure_blob_sink",
+						"type": "DatasetReference",
+						"parameters": {
+							"directoryName": "@concat('raw_adobe_lnd/',pipeline().parameters.src_directory_name,'_',pipeline().parameters.file_type)",
+							"container_name": "raw"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_audi_azure_blob_sink",
+						"type": "DatasetReference",
+						"parameters": {
+							"directoryName": {
+								"value": "@concat('raw_adobe/adobe_',pipeline().parameters.folder,'/',formatDateTime(utcnow(),'yyyyMMdd'))",
+								"type": "Expression"
+							},
+							"container_name": "raw"
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"source_system": {
+				"type": "string",
+				"defaultValue": "S3_95266_722"
+			},
+			"file_count_greaterthan": {
+				"type": "int",
+				"defaultValue": 90
+			},
+			"file_type": {
+				"type": "string",
+				"defaultValue": "gaid"
+			},
+			"src_directory_name": {
+				"type": "string",
+				"defaultValue": "adobe"
+			},
+			"folder": {
+				"type": "string",
+				"defaultValue": "gaid"
+			}
+		},
+		"variables": {
+			"curr_m0": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"max_m0": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"prev_m0": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"out_m0": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"curr_m1": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"max_m1": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"prev_m1": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"out_m1": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"curr_m2": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"max_m2": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"prev_m2": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"out_m2": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"final_max": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"curr_m3": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"max_m3": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"prev_m3": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"out_m3": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"fname": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

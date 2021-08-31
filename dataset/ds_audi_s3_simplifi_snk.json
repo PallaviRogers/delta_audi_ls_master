@@ -1,0 +1,19 @@
+{
+	"name": "ds_audi_s3_simplifi_snk",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_azure_blob",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"folderPath": "raw_simplifi/landing",
+				"container": "audi"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

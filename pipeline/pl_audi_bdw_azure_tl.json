@@ -1,0 +1,132 @@
+{
+	"name": "pl_audi_bdw_azure_tl",
+	"properties": {
+		"description": "Pipeline to move data from oracle to azure blob",
+		"activities": [
+			{
+				"name": "copy_ora_to_blob",
+				"description": "copy data from oracle to blob",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "OracleSource",
+						"oracleReaderQuery": {
+							"value": "@concat('select ',pipeline().parameters.column_list,' from ',pipeline().parameters.schema_name,'.',pipeline().parameters.src_table_name,' ',pipeline().parameters.filter_condition)",
+							"type": "Expression"
+						},
+						"partitionOption": "None",
+						"queryTimeout": "02:00:00"
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_audi_ora_bdw_src",
+						"type": "DatasetReference",
+						"parameters": {
+							"schemaName": {
+								"value": "@pipeline().parameters.schema_name",
+								"type": "Expression"
+							},
+							"tableName": {
+								"value": "@pipeline().parameters.src_table_name",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_audi_azure_blob_table_parquet",
+						"type": "DatasetReference",
+						"parameters": {
+							"container_name": "raw",
+							"directory_name": {
+								"value": "@concat('raw_',pipeline().parameters.schema_name,'_lnd/',pipeline().parameters.tgt_table_name)",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Notebook1",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "copy_ora_to_blob",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/bdw/bdw_curated_tables",
+					"baseParameters": {
+						"schema_name": {
+							"value": "@toLower(pipeline().parameters.schema_name)",
+							"type": "Expression"
+						},
+						"table_name": {
+							"value": "@toLower(pipeline().parameters.tgt_table_name)",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"schema_name": {
+				"type": "string",
+				"defaultValue": "enterprise"
+			},
+			"src_table_name": {
+				"type": "string",
+				"defaultValue": "price_plan_group"
+			},
+			"tgt_table_name": {
+				"type": "string"
+			},
+			"column_list": {
+				"type": "string",
+				"defaultValue": "*"
+			},
+			"filter_condition": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

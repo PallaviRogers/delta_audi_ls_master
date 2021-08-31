@@ -1,0 +1,11 @@
+{
+	"name": "ls_audi_kv",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://mazcacdmtqa1308audikv01.vault.azure.net/"
+		}
+	}
+}

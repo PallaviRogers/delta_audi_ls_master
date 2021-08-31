@@ -1,0 +1,79 @@
+{
+	"name": "ds_audi_s3_dtc_src",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_s3_dtc",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"s3bucketname": {
+				"type": "string"
+			},
+			"filename": {
+				"type": "string"
+			},
+			"header": {
+				"type": "bool"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AmazonS3Location",
+				"bucketName": {
+					"value": "@dataset().s3bucketname",
+					"type": "Expression"
+				},
+				"fileName": {
+					"value": "@dataset().filename",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"encodingName": "UTF-8",
+			"escapeChar": "\\",
+			"firstRowAsHeader": {
+				"value": "@dataset().header",
+				"type": "Expression"
+			},
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

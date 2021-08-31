@@ -1,0 +1,32 @@
+{
+	"name": "trigger_distinct_uuid",
+	"properties": {
+		"description": "load mbuadl_agg_nonpi.distinct_uuid  from on-prem hive",
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipeline": {
+			"pipelineReference": {
+				"referenceName": "pl_onprem_adls_delta_audi",
+				"type": "PipelineReference"
+			},
+			"parameters": {
+				"windowStart": "@{trigger().outputs.windowStartTime}",
+				"windowEnd": "@{trigger().outputs.windowEndTime}",
+				"schemaname": "mbuadl_agg",
+				"tablename": "distinct_uuid"
+			}
+		},
+		"type": "TumblingWindowTrigger",
+		"typeProperties": {
+			"frequency": "Hour",
+			"interval": 24,
+			"startTime": "2020-06-01T18:15:00Z",
+			"delay": "00:00:00",
+			"maxConcurrency": 50,
+			"retryPolicy": {
+				"intervalInSeconds": 30
+			},
+			"dependsOn": []
+		}
+	}
+}

@@ -1,0 +1,26 @@
+{
+	"name": "ls_audi_simplifi_s3_campaign_event",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"description": "linked service to connect campaign event details from simplifi rogers S3 bucket (sifi-rogers-media)",
+		"annotations": [],
+		"type": "AmazonS3",
+		"typeProperties": {
+			"serviceUrl": "",
+			"accessKeyId": "AKIAWS7WFB5JE37TUAKR",
+			"secretAccessKey": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_audi_kv",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "conn-audi-S3-simplifi-campaign-event"
+			},
+			"authenticationType": "AccessKey"
+		},
+		"connectVia": {
+			"referenceName": "AUDI-IR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

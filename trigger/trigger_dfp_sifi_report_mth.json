@@ -1,0 +1,36 @@
+{
+	"name": "trigger_dfp_sifi_report_mth",
+	"properties": {
+		"description": "trigger to load mbuadl_agg.dfp_sifi_report_mth",
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_onprem_adls_delta_audi",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"windowStart": "2020-01-01 00:00:00",
+					"windowEnd": "2999-01-01 00:00:00",
+					"schemaname": "mbuadl_agg",
+					"tablename": "dfp_sifi_report_mth"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Month",
+				"interval": 1,
+				"startTime": "2020-07-01T20:30:00Z",
+				"timeZone": "UTC",
+				"schedule": {
+					"monthDays": [
+						1
+					]
+				}
+			}
+		}
+	}
+}

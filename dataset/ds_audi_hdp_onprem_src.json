@@ -1,0 +1,31 @@
+{
+	"name": "ds_audi_hdp_onprem_src",
+	"properties": {
+		"description": "source : Hive on perm\nschema : Enter parameter(schema name)\nTable: Enter parameter(filename)",
+		"linkedServiceName": {
+			"referenceName": "ls_audi_hdfs_qa",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"filename": {
+				"type": "string"
+			},
+			"schemaname": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Orc",
+		"typeProperties": {
+			"location": {
+				"type": "HdfsLocation",
+				"folderPath": {
+					"value": "@concat('apps/hive/warehouse/',concat(toLower(dataset().schemaname),concat('.db/',toLower(dataset().filename))))",
+					"type": "Expression"
+				}
+			}
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,31 @@
+{
+	"name": "trigger_trait_dfp_sifi_report_dly",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipeline": {
+			"pipelineReference": {
+				"referenceName": "pl_onprem_adls_delta_audi",
+				"type": "PipelineReference"
+			},
+			"parameters": {
+				"windowStart": "@{trigger().outputs.windowStartTime}",
+				"windowEnd": "@{trigger().outputs.windowEndTime}",
+				"schemaname": "mbuadl_agg",
+				"tablename": "trait_dfp_sifi_report_dly"
+			}
+		},
+		"type": "TumblingWindowTrigger",
+		"typeProperties": {
+			"frequency": "Hour",
+			"interval": 24,
+			"startTime": "2020-12-09T14:10:00Z",
+			"delay": "00:00:00",
+			"maxConcurrency": 50,
+			"retryPolicy": {
+				"intervalInSeconds": 30
+			},
+			"dependsOn": []
+		}
+	}
+}

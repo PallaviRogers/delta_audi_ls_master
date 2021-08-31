@@ -1,0 +1,198 @@
+{
+	"name": "pl_audi_s3_adobe_cdf",
+	"properties": {
+		"activities": [
+			{
+				"name": "modified_start_date",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "check_for_load_type",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "start_date",
+					"value": {
+						"value": "@variables('start_date_true')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "modified_end_date",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "end_date",
+					"value": {
+						"value": "@concat(formatDateTime(utcnow(), 'yyyy-MM-dd'),' 04:00:00.000Z')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "check_for_load_type",
+				"description": "This processor will check whether the parameter passed to the pipeline is \"initial\" or \"incremental\". According to the parameter, values for start_date and end_date will be set up.",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.load_type,'initial')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "get_delta_date",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/Adobe_CDF/adobe_cdf_to_adf_parameter"
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "start_date",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "get_delta_date",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "start_date_true",
+								"value": {
+									"value": "@convertToUtc(activity('get_delta_date').Output.runOutPut, 'Eastern Standard Time')",
+									"type": "Expression"
+								}
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "start_date_true",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "start_date_true",
+								"value": {
+									"value": "@pipeline().parameters.start_date",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "copy_gz_files",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "modified_start_date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "modified_end_date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "BinarySource",
+						"storeSettings": {
+							"type": "AmazonS3ReadSettings",
+							"recursive": true,
+							"wildcardFolderPath": "rogers/day=*",
+							"wildcardFileName": "*.gz"
+						},
+						"formatSettings": {
+							"type": "BinaryReadSettings"
+						}
+					},
+					"sink": {
+						"type": "BinarySink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings",
+							"copyBehavior": "PreserveHierarchy"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_audi_s3_adobe_cdf_src",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_audi_azure_blob_sink",
+						"type": "DatasetReference",
+						"parameters": {
+							"directoryName": "raw_adobe_cdf_lnd",
+							"container_name": "raw"
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"load_type": {
+				"type": "string",
+				"defaultValue": "initial"
+			},
+			"start_date": {
+				"type": "string",
+				"defaultValue": "03/01/2020 00:00:00"
+			}
+		},
+		"variables": {
+			"start_date": {
+				"type": "String"
+			},
+			"end_date": {
+				"type": "String"
+			},
+			"start_date_true": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

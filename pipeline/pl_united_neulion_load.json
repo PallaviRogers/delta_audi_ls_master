@@ -1,0 +1,405 @@
+{
+	"name": "pl_united_neulion_load",
+	"properties": {
+		"activities": [
+			{
+				"name": "If Delta load or Historical Load",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(toUpper(pipeline().parameters.SRC_CUSTOM_WHERE_CLAUSE),'NULL')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "Neulion HIST V_SRC_COUNT_DERIVED",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "copy_ora_sandbox_neulion_blob",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "V_SRC_COUNT_DERIVED",
+								"value": {
+									"value": "@string(activity('copy_ora_sandbox_neulion_blob').output.dataWritten)",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "copy_ora_sandbox_neulion_blob",
+							"description": "copy data from oracle sandbox neulion to blob",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "OracleSource",
+									"oracleReaderQuery": {
+										"value": "@concat(pipeline().parameters.QRY, ' ', if(equals(pipeline().parameters.CURR_MAX_DELTA_COL_VALUE, 'NULL'), 'WHERE 1 = 1', concat(' WHERE ', pipeline().parameters.SRC_DELTA_COL, ' > ',pipeline().parameters.CURR_MAX_DELTA_COL_VALUE)), if(equals('NULL', pipeline().parameters.SRC_CUSTOM_WHERE_CLAUSE), ' ', pipeline().parameters.SRC_CUSTOM_WHERE_CLAUSE))",
+										"type": "Expression"
+									},
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings",
+										"blockSizeInMB": 10
+									},
+									"formatSettings": {
+										"type": "ParquetWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_audi_oracle_neulion_src",
+									"type": "DatasetReference",
+									"parameters": {
+										"schemaname": {
+											"value": "@variables('V_SCHEMANAME')",
+											"type": "Expression"
+										},
+										"tablename": {
+											"value": "@pipeline().parameters.TABLE_NAME",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_audi_azure_blob_table_parquet",
+									"type": "DatasetReference",
+									"parameters": {
+										"container_name": {
+											"value": "@pipeline().parameters.STAGE_CONTAINER",
+											"type": "Expression"
+										},
+										"directory_name": {
+											"value": "@pipeline().parameters.STAGE_PATH",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "Copy_SFTP_Zip",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "SftpReadSettings",
+										"maxConcurrentConnections": 1,
+										"recursive": true,
+										"modifiedDatetimeStart": {
+											"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+											"type": "Expression"
+										},
+										"modifiedDatetimeEnd": {
+											"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+											"type": "Expression"
+										},
+										"wildcardFolderPath": {
+											"value": "@pipeline().parameters.SRC_FILE_PATH",
+											"type": "Expression"
+										},
+										"wildcardFileName": "*.zip",
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings",
+										"maxConcurrentConnections": 1
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_csv_audi_neulion_src",
+									"type": "DatasetReference",
+									"parameters": {
+										"foldername": {
+											"value": "@pipeline().parameters.SRC_FILE_PATH",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_csv_audi_adls_snk",
+									"type": "DatasetReference",
+									"parameters": {
+										"tablename": {
+											"value": "@pipeline().parameters.TABLE_NAME",
+											"type": "Expression"
+										},
+										"schemaname": {
+											"value": "@pipeline().parameters.SCHEMA_NAME",
+											"type": "Expression"
+										},
+										"containername": {
+											"value": "@pipeline().parameters.STAGE_CONTAINER",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Copy_Unzip",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "Copy_SFTP_Zip",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"maxConcurrentConnections": 1,
+										"recursive": true,
+										"wildcardFileName": "*",
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings",
+										"compressionProperties": {
+											"type": "ZipDeflateReadSettings",
+											"preserveZipFileNameAsFolder": false
+										}
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings",
+										"maxConcurrentConnections": 1
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_csv_unzip_audi_adls_src",
+									"type": "DatasetReference",
+									"parameters": {
+										"schemaname": {
+											"value": "@pipeline().parameters.SCHEMA_NAME",
+											"type": "Expression"
+										},
+										"tablename": {
+											"value": "@pipeline().parameters.TABLE_NAME",
+											"type": "Expression"
+										},
+										"containername": {
+											"value": "@pipeline().parameters.STAGE_CONTAINER",
+											"type": "Expression"
+										},
+										"header": {
+											"value": "@pipeline().parameters.SRC_FILE_HEADER",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_csv_audi_adls_neulion_unzip_snk",
+									"type": "DatasetReference",
+									"parameters": {
+										"schemaname": {
+											"value": "@pipeline().parameters.SCHEMA_NAME",
+											"type": "Expression"
+										},
+										"tablename": {
+											"value": "@pipeline().parameters.TABLE_NAME",
+											"type": "Expression"
+										},
+										"containername": {
+											"value": "@pipeline().parameters.STAGE_CONTAINER",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Neulion V_SRC_COUNT_DERIVED",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Copy_Unzip",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "V_SRC_COUNT_DERIVED",
+								"value": {
+									"value": "@string(activity('Copy_Unzip').output.dataWritten)",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"TABLE_NAME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SCHEMA_NAME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"WINDOW_END_TIME_UTC": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"WINDOW_START_TIME_UTC": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_FILE_PATH": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"STAGE_CONTAINER": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"S3_BUCKET": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"STAGE_PATH": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_CUSTOM_WHERE_CLAUSE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"QRY": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"CURR_MAX_DELTA_COL_VALUE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_DELTA_COL": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"CURR_MAX_DELTA_COL_VALUE_FORMAT": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_FILE_HEADER": {
+				"type": "string",
+				"defaultValue": "NULL"
+			}
+		},
+		"variables": {
+			"V_SRC_COUNT_DERIVED": {
+				"type": "String",
+				"defaultValue": "NULL"
+			},
+			"V_CURR_DELTA_VAL_DERIVED": {
+				"type": "String",
+				"defaultValue": "NULL"
+			},
+			"V_SCHEMANAME": {
+				"type": "String",
+				"defaultValue": "SG830875"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-08-05T13:56:42Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

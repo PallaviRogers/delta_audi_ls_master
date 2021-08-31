@@ -1,0 +1,29 @@
+{
+	"name": "trigger_stb_viewership_rogers_channel",
+	"properties": {
+		"description": "trigger to load mbuadl_agg.stb_viewership_rogers_channel ",
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_onprem_adls_audi",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schemaname": "mbuadl_agg",
+					"tablename": "stb_viewership_rogers_channel"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 24,
+				"startTime": "2020-06-29T19:00:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

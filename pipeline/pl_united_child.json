@@ -1,0 +1,1777 @@
+{
+	"name": "pl_united_child",
+	"properties": {
+		"description": "adding load control logic",
+		"activities": [
+			{
+				"name": "If source has new files",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "check new files in landing folder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('check new files in landing folder').output.exists,true)",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "send email no files in source",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/ProjectUnited/send_email",
+								"baseParameters": {
+									"schemaname": {
+										"value": "@pipeline().parameters.SCHEMA_NAME",
+										"type": "Expression"
+									},
+									"filename": {
+										"value": "@pipeline().parameters.TABLE_NAME",
+										"type": "Expression"
+									},
+									"pipeline_name": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"pipeline_id": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"start_date": {
+										"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+										"type": "Expression"
+									},
+									"end_date": {
+										"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+										"type": "Expression"
+									},
+									"reason": "No new files in source"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "load processor",
+							"description": "template notebook to load from raw to curated",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "LOG Stage Completed Run Status",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": {
+									"value": "@pipeline().parameters.NOTEBOOK_PATH",
+									"type": "Expression"
+								},
+								"baseParameters": {
+									"filename": {
+										"value": "@pipeline().parameters.TABLE_NAME",
+										"type": "Expression"
+									},
+									"schemaname": {
+										"value": "@pipeline().parameters.SCHEMA_NAME",
+										"type": "Expression"
+									},
+									"EXEC_RUN_ID": {
+										"value": "@pipeline().parameters.EXEC_RUN_ID",
+										"type": "Expression"
+									},
+									"METADATA_JSON": {
+										"value": "@string(pipeline().parameters.METADATA_JSON)",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "set V_NEW_DELTA_VALUE_AFT_NTBK",
+							"description": "set the delta value to be recorded on to metadata control table for next run use ",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Set V_TGT_COUNT_DERIVED",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "V_NEW_DELTA_VALUE",
+								"value": {
+									"value": "@if(equals(pipeline().parameters.LOAD_METHOD,'APIZUORA2BLOB'),variables('V_CURR_DELTA_VAL_DERIVED'),pipeline().parameters.WINDOW_END_TIME_UTC)",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Log Success on both Control tables",
+							"description": "Update the metadata and load control table",
+							"type": "ExecutePipeline",
+							"dependsOn": [
+								{
+									"activity": "set V_NEW_DELTA_VALUE_AFT_NTBK",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_updt_unitedloadcontrol",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"PREV_DELTA_VALUE": {
+										"value": "@pipeline().parameters.CURR_MAX_DELTA_COL_VALUE",
+										"type": "Expression"
+									},
+									"CURR_DELTA_VALUE": {
+										"value": "@variables('V_NEW_DELTA_VALUE')",
+										"type": "Expression"
+									},
+									"JOB_NAME": {
+										"value": "@pipeline().parameters.JOB_NAME",
+										"type": "Expression"
+									},
+									"LOAD_CONTROL_TABLE": {
+										"value": "@pipeline().parameters.LOAD_CONTROL_TABLE",
+										"type": "Expression"
+									},
+									"RUN_STATUS": "SUCCESS",
+									"RUN_MESSAGE": {
+										"value": "@concat('Successfully loaded ', variables('V_TGT_COUNT_DERIVED') , ' records into databricks table ')",
+										"type": "Expression"
+									},
+									"EXEC_ID": {
+										"value": "@pipeline().parameters.EXEC_RUN_ID",
+										"type": "Expression"
+									},
+									"PROCESS_CONTROL_TABLE": {
+										"value": "@pipeline().parameters.PROCESS_CONTROL_TABLE",
+										"type": "Expression"
+									},
+									"LOAD_START_TIME": {
+										"value": "@pipeline().parameters.LOAD_START_TIME",
+										"type": "Expression"
+									},
+									"ROWS_PROCESSED": {
+										"value": "@variables('V_TGT_COUNT_DERIVED')",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "Archive data",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "load processor",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "BinarySource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"deleteFilesAfterCompletion": false
+									},
+									"formatSettings": {
+										"type": "BinaryReadSettings"
+									}
+								},
+								"sink": {
+									"type": "BinarySink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_archive_adls_src",
+									"type": "DatasetReference",
+									"parameters": {
+										"containername": {
+											"value": "@pipeline().parameters.STAGE_CONTAINER",
+											"type": "Expression"
+										},
+										"folderpath": {
+											"value": "@pipeline().parameters.STAGE_PATH",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_archive_adls_snk",
+									"type": "DatasetReference",
+									"parameters": {
+										"containername": {
+											"value": "@pipeline().parameters.ARCHIVE_CONTAINER",
+											"type": "Expression"
+										},
+										"folderpath": {
+											"value": "@concat(pipeline().parameters.ARCHIVE_PATH,'/',utcnow())",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "LOG Stage Completed Run Status",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_updt_unitedloadcontrol",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"PREV_DELTA_VALUE": {
+										"value": "@pipeline().parameters.CURR_MAX_DELTA_COL_VALUE",
+										"type": "Expression"
+									},
+									"CURR_DELTA_VALUE": {
+										"value": "@variables('V_NEW_DELTA_VALUE')",
+										"type": "Expression"
+									},
+									"JOB_NAME": {
+										"value": "@pipeline().parameters.JOB_NAME",
+										"type": "Expression"
+									},
+									"LOAD_CONTROL_TABLE": {
+										"value": "@pipeline().parameters.LOAD_CONTROL_TABLE",
+										"type": "Expression"
+									},
+									"RUN_STATUS": {
+										"value": "@if(equals(pipeline().parameters.DEST_TYPE, 'STAGE'), 'SUCCESS', 'INFO:: Copy2Stage layer Completed')",
+										"type": "Expression"
+									},
+									"RUN_MESSAGE": {
+										"value": "@concat('INFO:: Cpy2Stage Completed : Row Count or File Size :: ', variables('V_SRC_COUNT_DERIVED') , ' :: staged  ', pipeline().parameters.STAGE_PATH)",
+										"type": "Expression"
+									},
+									"EXEC_ID": {
+										"value": "@pipeline().parameters.EXEC_RUN_ID",
+										"type": "Expression"
+									},
+									"PROCESS_CONTROL_TABLE": {
+										"value": "@pipeline().parameters.PROCESS_CONTROL_TABLE",
+										"type": "Expression"
+									},
+									"LOAD_START_TIME": {
+										"value": "@pipeline().parameters.LOAD_START_TIME",
+										"type": "Expression"
+									},
+									"ROWS_PROCESSED": {
+										"value": "@variables('V_SRC_COUNT_DERIVED')",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "Set V_TGT_COUNT_DERIVED",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Archive data",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "V_TGT_COUNT_DERIVED",
+								"value": {
+									"value": "@string(activity('load processor').output.runOutput)",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "check new files in landing folder",
+				"type": "GetMetadata",
+				"dependsOn": [
+					{
+						"activity": "Ingest_by_src_type",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_audi_hdp_onprem_snk",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@pipeline().parameters.TABLE_NAME",
+								"type": "Expression"
+							},
+							"schemaname": {
+								"value": "@pipeline().parameters.SCHEMA_NAME",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"exists"
+					],
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"wildcardFolderPath": "*"
+					}
+				}
+			},
+			{
+				"name": "if incremental load fails send email",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "If source has new files",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/ProjectUnited/send_email",
+					"baseParameters": {
+						"schemaname": {
+							"value": "@pipeline().parameters.SCHEMA_NAME",
+							"type": "Expression"
+						},
+						"filename": {
+							"value": "@pipeline().parameters.TABLE_NAME",
+							"type": "Expression"
+						},
+						"pipeline_name": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"pipeline_id": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"start_date": {
+							"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+							"type": "Expression"
+						},
+						"end_date": {
+							"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+							"type": "Expression"
+						},
+						"activity_output": {
+							"value": "@activity('load processor').output.runPageUrl",
+							"type": "Expression"
+						},
+						"reason": "Incremental load failed for "
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "cleaning raw container folder",
+				"description": "cleaning data in raw container folder which is available due to last run.",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_blob_cleaner_united",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"TABLENAME": {
+							"value": "@pipeline().parameters.TABLE_NAME",
+							"type": "Expression"
+						},
+						"SCHEMANAME": {
+							"value": "@pipeline().parameters.SCHEMA_NAME",
+							"type": "Expression"
+						},
+						"CONTAINERNAME": {
+							"value": "@pipeline().parameters.STAGE_CONTAINER",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Ingest_by_src_type",
+				"description": "Start the actual PULL from Source to ADLS Raw container",
+				"type": "Switch",
+				"dependsOn": [
+					{
+						"activity": "cleaning raw container folder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"on": {
+						"value": "@pipeline().parameters.LOAD_METHOD",
+						"type": "Expression"
+					},
+					"cases": [
+						{
+							"value": "SFTPNEULION2BLOB",
+							"activities": [
+								{
+									"name": "source load neulion",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_united_neulion_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"TABLE_NAME": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"SCHEMA_NAME": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"WINDOW_END_TIME_UTC": {
+												"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+												"type": "Expression"
+											},
+											"WINDOW_START_TIME_UTC": {
+												"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+												"type": "Expression"
+											},
+											"SRC_FILE_PATH": {
+												"value": "@pipeline().parameters.SRC_FILE_PATH",
+												"type": "Expression"
+											},
+											"STAGE_CONTAINER": {
+												"value": "@pipeline().parameters.STAGE_CONTAINER",
+												"type": "Expression"
+											},
+											"S3_BUCKET": {
+												"value": "@pipeline().parameters.S3_BUCKET",
+												"type": "Expression"
+											},
+											"STAGE_PATH": {
+												"value": "@pipeline().parameters.STAGE_PATH",
+												"type": "Expression"
+											},
+											"SRC_CUSTOM_WHERE_CLAUSE": {
+												"value": "@pipeline().parameters.SRC_CUSTOM_WHERE_CLAUSE",
+												"type": "Expression"
+											},
+											"QRY": {
+												"value": "@pipeline().parameters.QRY",
+												"type": "Expression"
+											},
+											"CURR_MAX_DELTA_COL_VALUE": {
+												"value": "@pipeline().parameters.CURR_MAX_DELTA_COL_VALUE",
+												"type": "Expression"
+											},
+											"SRC_DELTA_COL": {
+												"value": "@pipeline().parameters.SRC_DELTA_COL",
+												"type": "Expression"
+											},
+											"CURR_MAX_DELTA_COL_VALUE_FORMAT": {
+												"value": "@pipeline().parameters.CURR_MAX_DELTA_COL_VALUE_FORMAT",
+												"type": "Expression"
+											},
+											"SRC_FILE_HEADER": {
+												"value": "@pipeline().parameters.SRC_FILE_HEADER",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "SFTPSFMCNHL2BLOB",
+							"activities": [
+								{
+									"name": "Copy SFMC NHL Data",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.00:20:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "SftpReadSettings",
+												"recursive": true,
+												"modifiedDatetimeStart": {
+													"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+													"type": "Expression"
+												},
+												"modifiedDatetimeEnd": {
+													"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+													"type": "Expression"
+												},
+												"wildcardFolderPath": {
+													"value": "@pipeline().parameters.SRC_FILE_PATH",
+													"type": "Expression"
+												},
+												"wildcardFileName": {
+													"value": "@concat('NHL-all',formatDateTime(utcnow(),'yyyyMMdd'),'.csv')",
+													"type": "Expression"
+												},
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_audi_sftp_sfmcNHL_src",
+											"type": "DatasetReference",
+											"parameters": {
+												"foldername": {
+													"value": "@pipeline().parameters.SRC_FILE_PATH",
+													"type": "Expression"
+												},
+												"header": {
+													"value": "@pipeline().parameters.SRC_FILE_HEADER",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_audi_adls_sfmc_snk",
+											"type": "DatasetReference",
+											"parameters": {
+												"schemaname": {
+													"value": "@pipeline().parameters.SCHEMA_NAME",
+													"type": "Expression"
+												},
+												"tablename": {
+													"value": "@pipeline().parameters.TABLE_NAME",
+													"type": "Expression"
+												},
+												"containername": {
+													"value": "@pipeline().parameters.STAGE_CONTAINER",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "SFMC NHL V_SRC_COUNT_DERIVED_copy1",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "Copy SFMC NHL Data",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_SRC_COUNT_DERIVED",
+										"value": {
+											"value": "@string(activity('Copy SFMC NHL Data').output.dataWritten)",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "SFTPSFMCSN2BLOB",
+							"activities": [
+								{
+									"name": "Copy SFMC SportsNet Data",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.00:20:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "SftpReadSettings",
+												"recursive": true,
+												"modifiedDatetimeStart": {
+													"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+													"type": "Expression"
+												},
+												"modifiedDatetimeEnd": {
+													"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+													"type": "Expression"
+												},
+												"wildcardFolderPath": {
+													"value": "@pipeline().parameters.SRC_FILE_PATH",
+													"type": "Expression"
+												},
+												"wildcardFileName": {
+													"value": "@concat('SportsnetNOW-all',formatDateTime(utcnow(),'yyyyMMdd'),'.csv')",
+													"type": "Expression"
+												},
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_audi_sftp_sfmcSN_src",
+											"type": "DatasetReference",
+											"parameters": {
+												"foldername": {
+													"value": "@pipeline().parameters.SRC_FILE_PATH",
+													"type": "Expression"
+												},
+												"header": {
+													"value": "@pipeline().parameters.SRC_FILE_HEADER",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_audi_adls_sfmc_snk",
+											"type": "DatasetReference",
+											"parameters": {
+												"schemaname": {
+													"value": "@pipeline().parameters.SCHEMA_NAME",
+													"type": "Expression"
+												},
+												"tablename": {
+													"value": "@pipeline().parameters.TABLE_NAME",
+													"type": "Expression"
+												},
+												"containername": {
+													"value": "@pipeline().parameters.STAGE_CONTAINER",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "SFMC SN V_SRC_COUNT_DERIVED_copy1_copy1",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "Copy SFMC SportsNet Data",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_SRC_COUNT_DERIVED",
+										"value": {
+											"value": "@string(activity('Copy SFMC SportsNet Data').output.dataWritten)",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "S3MLBAM2BLOB",
+							"activities": [
+								{
+									"name": "source load mlbam",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_united_mlbam_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"TABLE_NAME": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"SCHEMA_NAME": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"WINDOW_END_TIME_UTC": {
+												"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+												"type": "Expression"
+											},
+											"WINDOW_START_TIME_UTC": {
+												"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+												"type": "Expression"
+											},
+											"SRC_FILE_PATH": {
+												"value": "@pipeline().parameters.SRC_FILE_PATH",
+												"type": "Expression"
+											},
+											"STAGE_CONTAINER": {
+												"value": "@pipeline().parameters.STAGE_CONTAINER",
+												"type": "Expression"
+											},
+											"S3_BUCKET": {
+												"value": "@pipeline().parameters.S3_BUCKET",
+												"type": "Expression"
+											},
+											"STAGE_PATH": {
+												"value": "@pipeline().parameters.STAGE_PATH",
+												"type": "Expression"
+											},
+											"SRC_CUSTOM_WHERE_CLAUSE": {
+												"value": "@pipeline().parameters.SRC_CUSTOM_WHERE_CLAUSE",
+												"type": "Expression"
+											},
+											"QRY": {
+												"value": "@pipeline().parameters.QRY",
+												"type": "Expression"
+											},
+											"CURR_MAX_DELTA_COL_VALUE": {
+												"value": "@pipeline().parameters.CURR_MAX_DELTA_COL_VALUE",
+												"type": "Expression"
+											},
+											"SRC_DELTA_COL": {
+												"value": "@pipeline().parameters.SRC_DELTA_COL",
+												"type": "Expression"
+											},
+											"CURR_MAX_DELTA_COL_VALUE_FORMAT": {
+												"value": "@pipeline().parameters.CURR_MAX_DELTA_COL_VALUE_FORMAT",
+												"type": "Expression"
+											},
+											"DBFS_SAVE_MODE": {
+												"value": "@pipeline().parameters.DBFS_SAVE_MODE",
+												"type": "Expression"
+											},
+											"SRC_FILE_NAME_PATTERN": {
+												"value": "@pipeline().parameters.SRC_FILE_NAME_PATTERN",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "APIZUORA2BLOB",
+							"activities": [
+								{
+									"name": "source load zuora",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_united_zuora_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"TABLE_NAME": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"SCHEMA_NAME": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"EXEC_RUN_ID": {
+												"value": "@pipeline().parameters.EXEC_RUN_ID",
+												"type": "Expression"
+											},
+											"METADATA_JSON": {
+												"value": "@pipeline().parameters.METADATA_JSON",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "S3DTC2BLOB",
+							"activities": [
+								{
+									"name": "source load dtc",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_united_dtc_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"TABLE_NAME": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"SCHEMA_NAME": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"WINDOW_END_TIME_UTC": {
+												"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+												"type": "Expression"
+											},
+											"WINDOW_START_TIME_UTC": {
+												"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+												"type": "Expression"
+											},
+											"SRC_FILE_PATH": {
+												"value": "@pipeline().parameters.SRC_FILE_PATH",
+												"type": "Expression"
+											},
+											"STAGE_CONTAINER": {
+												"value": "@pipeline().parameters.STAGE_CONTAINER",
+												"type": "Expression"
+											},
+											"S3_BUCKET": {
+												"value": "@pipeline().parameters.S3_BUCKET",
+												"type": "Expression"
+											},
+											"STAGE_PATH": {
+												"value": "@pipeline().parameters.STAGE_PATH",
+												"type": "Expression"
+											},
+											"SRC_CUSTOM_WHERE_CLAUSE": {
+												"value": "@pipeline().parameters.SRC_CUSTOM_WHERE_CLAUSE",
+												"type": "Expression"
+											},
+											"QRY": {
+												"value": "@pipeline().parameters.QRY",
+												"type": "Expression"
+											},
+											"CURR_MAX_DELTA_COL_VALUE": {
+												"value": "@pipeline().parameters.CURR_MAX_DELTA_COL_VALUE",
+												"type": "Expression"
+											},
+											"SRC_DELTA_COL": {
+												"value": "@pipeline().parameters.SRC_DELTA_COL",
+												"type": "Expression"
+											},
+											"CURR_MAX_DELTA_COL_VALUE_FORMAT": {
+												"value": "@pipeline().parameters.CURR_MAX_DELTA_COL_VALUE_FORMAT",
+												"type": "Expression"
+											},
+											"SRC_COMPRESSION_FORMAT": {
+												"value": "@pipeline().parameters.SRC_COMPRESSION_FORMAT",
+												"type": "Expression"
+											},
+											"SRC_FILE_HEADER": {
+												"value": "@pipeline().parameters.SRC_FILE_HEADER",
+												"type": "Expression"
+											},
+											"DBFS_SAVE_MODE": {
+												"value": "@pipeline().parameters.DBFS_SAVE_MODE",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "SFTPNEULIONNTBK2BLOB",
+							"activities": [
+								{
+									"name": "neulion_load_notebook",
+									"description": "hashing pii columns of neulion data and loading into datalake.",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": {
+											"value": "/ProjectUnited/Nuelion_Sftp_Connect",
+											"type": "Expression"
+										},
+										"baseParameters": {
+											"filename": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"schemaname": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"EXEC_RUN_ID": {
+												"value": "@pipeline().parameters.EXEC_RUN_ID",
+												"type": "Expression"
+											},
+											"METADATA_JSON": {
+												"value": "@string(pipeline().parameters.METADATA_JSON)",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_audi_databricks_v8x",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "NEULION V_SRC_COUNT_DERIVED",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "NEULION V_CURR_DELTA_VAL_DERIVED_copy1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_SRC_COUNT_DERIVED",
+										"value": {
+											"value": "@string(activity('neulion_load_notebook').output.runOutput[0])",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "NEULION V_CURR_DELTA_VAL_DERIVED_copy1",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "neulion_load_notebook",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_CURR_DELTA_VAL_DERIVED",
+										"value": {
+											"value": "@string(activity('neulion_load_notebook').output.runOutput[1])",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "SFTPSFMCNTBK2BLOB",
+							"activities": [
+								{
+									"name": "sfmc_load_notebook",
+									"description": "hashing pii columns of neulion data and loading into datalake.",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": {
+											"value": "/ProjectUnited/SFMC_Source_Connect",
+											"type": "Expression"
+										},
+										"baseParameters": {
+											"filename": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"schemaname": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"EXEC_RUN_ID": {
+												"value": "@pipeline().parameters.EXEC_RUN_ID",
+												"type": "Expression"
+											},
+											"METADATA_JSON": {
+												"value": "@string(pipeline().parameters.METADATA_JSON)",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_audi_databricks_v8x",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "SFMC V_SRC_COUNT_DERIVED",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "SFMC V_CURR_DELTA_VAL_DERIVED_copy1_copy1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_SRC_COUNT_DERIVED",
+										"value": {
+											"value": "@string(activity('sfmc_load_notebook').output.runOutput[0])",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "SFMC V_CURR_DELTA_VAL_DERIVED_copy1_copy1",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "sfmc_load_notebook",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_CURR_DELTA_VAL_DERIVED",
+										"value": {
+											"value": "@string(activity('sfmc_load_notebook').output.runOutput[1])",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "S3DTCNTBK2BLOB",
+							"activities": [
+								{
+									"name": "dtc_load_notebook",
+									"description": "hashing pii columns of neulion data and loading into datalake.",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": {
+											"value": "/ProjectUnited/DTC_Source_Connect",
+											"type": "Expression"
+										},
+										"baseParameters": {
+											"filename": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"schemaname": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"EXEC_RUN_ID": {
+												"value": "@pipeline().parameters.EXEC_RUN_ID",
+												"type": "Expression"
+											},
+											"METADATA_JSON": {
+												"value": "@string(pipeline().parameters.METADATA_JSON)",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_audi_databricks_v8x",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "DTC V_SRC_COUNT_DERIVED",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "DTC V_CURR_DELTA_VAL_DERIVED",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_SRC_COUNT_DERIVED",
+										"value": {
+											"value": "@string(activity('dtc_load_notebook').output.runOutput[0])",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "DTC V_CURR_DELTA_VAL_DERIVED",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "dtc_load_notebook",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_CURR_DELTA_VAL_DERIVED",
+										"value": {
+											"value": "@string(activity('dtc_load_notebook').output.runOutput[1])",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "S3MLBAMNTBK2BLOB",
+							"activities": [
+								{
+									"name": "mlbam_load_notebook",
+									"description": "hashing pii columns of neulion data and loading into datalake.",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": {
+											"value": "/ProjectUnited/MLBAM_Source_Connect",
+											"type": "Expression"
+										},
+										"baseParameters": {
+											"filename": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"schemaname": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"EXEC_RUN_ID": {
+												"value": "@pipeline().parameters.EXEC_RUN_ID",
+												"type": "Expression"
+											},
+											"METADATA_JSON": {
+												"value": "@string(pipeline().parameters.METADATA_JSON)",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_audi_databricks_v8x",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "MLBAM V_SRC_COUNT_DERIVED",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "mlbam_load_notebook",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_SRC_COUNT_DERIVED",
+										"value": {
+											"value": "@string(activity('mlbam_load_notebook').output.runOutput[0])",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "MLBAM V_CURR_DELTA_VAL_DERIVED",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "MLBAM V_SRC_COUNT_DERIVED",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_CURR_DELTA_VAL_DERIVED",
+										"value": {
+											"value": "@string(activity('mlbam_load_notebook').output.runOutput[1])",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "S3NEWRELIC2BLOB",
+							"activities": [
+								{
+									"name": "Copy newrelic Json data from s3 bucket",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "BinarySource",
+											"storeSettings": {
+												"type": "AmazonS3ReadSettings",
+												"recursive": true,
+												"modifiedDatetimeStart": {
+													"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+													"type": "Expression"
+												},
+												"modifiedDatetimeEnd": {
+													"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+													"type": "Expression"
+												},
+												"wildcardFolderPath": "*",
+												"wildcardFileName": {
+													"value": "@pipeline().parameters.SRC_FILE_PATH",
+													"type": "Expression"
+												},
+												"deleteFilesAfterCompletion": false
+											},
+											"formatSettings": {
+												"type": "BinaryReadSettings"
+											}
+										},
+										"sink": {
+											"type": "BinarySink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											}
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_audi_s3_newrelic_src",
+											"type": "DatasetReference",
+											"parameters": {
+												"bucketName": {
+													"value": "@pipeline().parameters.S3_BUCKET",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_audi_s3_newrelic_snk",
+											"type": "DatasetReference",
+											"parameters": {
+												"schemaname": {
+													"value": "@pipeline().parameters.SCHEMA_NAME",
+													"type": "Expression"
+												},
+												"tablename": {
+													"value": "@pipeline().parameters.TABLE_NAME",
+													"type": "Expression"
+												},
+												"containername": {
+													"value": "@pipeline().parameters.STAGE_CONTAINER",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "NEWRELIC V_SRC_COUNT_DERIVED",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "Copy newrelic Json data from s3 bucket",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_SRC_COUNT_DERIVED",
+										"value": {
+											"value": "@string(activity('Copy newrelic Json data from s3 bucket').output.dataWritten)",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "APIAMAZONIAP2BLOB",
+							"activities": [
+								{
+									"name": "source load amazoniap copy",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_united_amazoniap_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"TABLE_NAME": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"SCHEMA_NAME": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"EXEC_RUN_ID": {
+												"value": "@pipeline().parameters.EXEC_RUN_ID",
+												"type": "Expression"
+											},
+											"METADATA_JSON": {
+												"value": "@pipeline().parameters.METADATA_JSON",
+												"type": "Expression"
+											},
+											"STAGE_CONTAINER": {
+												"value": "@pipeline().parameters.STAGE_CONTAINER",
+												"type": "Expression"
+											},
+											"SRC_FILE_HEADER": {
+												"value": "@pipeline().parameters.SRC_FILE_HEADER",
+												"type": "Expression"
+											},
+											"SKIP_LINES": {
+												"value": "@pipeline().parameters.SKIP_LINES",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "APIGOOGLEIAP2BLOB",
+							"activities": [
+								{
+									"name": "source load googleiap",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_united_load_googleiap",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"TABLE_NAME": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"SCHEMA_NAME": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"EXEC_RUN_ID": {
+												"value": "@pipeline().parameters.EXEC_RUN_ID",
+												"type": "Expression"
+											},
+											"METADATA_JSON": {
+												"value": "@pipeline().parameters.METADATA_JSON",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "APIITUNESCONNECT2BLOB",
+							"activities": [
+								{
+									"name": "source load ITunesConnect",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_united_itunesconnect_source_load",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"TABLE_NAME": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"SCHEMA_NAME": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"EXEC_RUN_ID": {
+												"value": "@pipeline().parameters.EXEC_RUN_ID",
+												"type": "Expression"
+											},
+											"METADATA_JSON": {
+												"value": "@pipeline().parameters.METADATA_JSON",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"TABLE_NAME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SCHEMA_NAME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"WINDOW_END_TIME_UTC": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"WINDOW_START_TIME_UTC": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"CURR_MAX_DELTA_COL_VALUE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"JOB_NAME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"EXEC_RUN_ID": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"METADATA_JSON": {
+				"type": "object",
+				"defaultValue": "N"
+			},
+			"TARGET_SCHEMANAME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"TARGET_FOLDER": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"LOAD_TYPE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_TYPE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"LOAD_METHOD": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_FILE_PATH": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"NOTEBOOK_PATH": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"LOAD_CONTROL_TABLE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"STAGE_CONTAINER": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"S3_BUCKET": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"STAGE_PATH": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"ARCHIVE_CONTAINER": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"ARCHIVE_PATH": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"DEST_TYPE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"PROCESS_CONTROL_TABLE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"LOAD_START_TIME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_CUSTOM_WHERE_CLAUSE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"QRY": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_DELTA_COL": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"CURR_MAX_DELTA_COL_VALUE_FORMAT": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_COMPRESSION_FORMAT": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_FILE_HEADER": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"DBFS_SAVE_MODE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_FILE_NAME_PATTERN": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SKIP_LINES": {
+				"type": "string",
+				"defaultValue": "NULL"
+			}
+		},
+		"variables": {
+			"files": {
+				"type": "Boolean"
+			},
+			"V_ELT_METADATA_TABLE": {
+				"type": "String",
+				"defaultValue": "EltMetadataControl"
+			},
+			"V_METADATA_DEF_PARTITION_KEY": {
+				"type": "String",
+				"defaultValue": "DEFAULT"
+			},
+			"V_NEW_DELTA_VALUE": {
+				"type": "String",
+				"defaultValue": "NULL"
+			},
+			"V_LOAD_TYPE": {
+				"type": "String",
+				"defaultValue": "NULL"
+			},
+			"V_SRC_COUNT_DERIVED": {
+				"type": "String",
+				"defaultValue": "NULL"
+			},
+			"V_LOAD_START_TIME": {
+				"type": "String",
+				"defaultValue": "NULL"
+			},
+			"V_TGT_COUNT_DERIVED": {
+				"type": "String",
+				"defaultValue": "NULL"
+			},
+			"V_CURR_DELTA_VAL_DERIVED": {
+				"type": "String",
+				"defaultValue": "NULL"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-08-31T04:34:30Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

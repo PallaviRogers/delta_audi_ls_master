@@ -1,0 +1,90 @@
+{
+	"name": "pl_azure_copy_container_master_",
+	"properties": {
+		"description": "This is to copy files from one container to other",
+		"activities": [
+			{
+				"name": "ForEach_folder",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.folderpath",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "pl_azure_copy_container",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_azure_copy_container",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"source_folder": {
+										"value": "@concat(pipeline().parameters.source_folder_prefix,item())",
+										"type": "Expression"
+									},
+									"source_container": {
+										"value": "@pipeline().parameters.source_container",
+										"type": "Expression"
+									},
+									"target_container": {
+										"value": "@pipeline().parameters.target_container",
+										"type": "Expression"
+									},
+									"target_folder": {
+										"value": "@concat(pipeline().parameters.target_folder_prefix,item())",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"folderpath": {
+				"type": "array",
+				"defaultValue": [
+					"dfp/NetworkActivities/",
+					"dfp/NetworkClicks/"
+				]
+			},
+			"source_container": {
+				"type": "string",
+				"defaultValue": "audi"
+			},
+			"target_container": {
+				"type": "string",
+				"defaultValue": "raw"
+			},
+			"source_folder_prefix": {
+				"type": "string",
+				"defaultValue": "edl_"
+			},
+			"target_folder_prefix": {
+				"type": "string",
+				"defaultValue": "crdt_"
+			}
+		},
+		"variables": {
+			"source_folder": {
+				"type": "String"
+			},
+			"target_folder": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-03-22T22:20:46Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

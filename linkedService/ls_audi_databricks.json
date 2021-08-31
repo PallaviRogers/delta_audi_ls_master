@@ -1,0 +1,34 @@
+{
+	"name": "ls_audi_databricks",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://canadacentral.azuredatabricks.net",
+			"accessToken": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_audi_kv",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "databrickstoken"
+			},
+			"newClusterNodeType": "Standard_DS4_v2",
+			"newClusterNumOfWorker": "2:20",
+			"newClusterSparkConf": {
+				"spark.hadoop.fs.azure.account.key.mazcaedevdmtaudi1308stg1.dfs.core.windows.net": "{{secrets/audi-databricks-scope/conn-audi-databricks}}"
+			},
+			"newClusterSparkEnvVars": {
+				"EDL_ADLS_ENDPOINT": "mazcaedevdmtaudi1308stg1.dfs.core.windows.net",
+				"PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+			},
+			"newClusterVersion": "6.4.x-scala2.11",
+			"newClusterInitScripts": []
+		},
+		"connectVia": {
+			"referenceName": "AUDI-IR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

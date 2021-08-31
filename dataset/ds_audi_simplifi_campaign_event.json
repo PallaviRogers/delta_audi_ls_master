@@ -1,0 +1,19 @@
+{
+	"name": "ds_audi_simplifi_campaign_event",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_simplifi_s3_campaign_event",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AmazonS3Location",
+				"bucketName": "sifi-rogers-media",
+				"folderPath": "daily_file"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

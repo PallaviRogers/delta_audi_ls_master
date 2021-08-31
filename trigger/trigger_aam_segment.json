@@ -1,0 +1,32 @@
+{
+	"name": "trigger_aam_segment",
+	"properties": {
+		"description": "trigger to load mbuadl_agg_nonpi.aam_segments",
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipeline": {
+			"pipelineReference": {
+				"referenceName": "pl_onprem_adls_delta_audi",
+				"type": "PipelineReference"
+			},
+			"parameters": {
+				"windowStart": "@{trigger().outputs.windowStartTime}",
+				"windowEnd": "@{trigger().outputs.windowEndTime}",
+				"schemaname": "mbuadl_agg",
+				"tablename": "aam_segments"
+			}
+		},
+		"type": "TumblingWindowTrigger",
+		"typeProperties": {
+			"frequency": "Hour",
+			"interval": 24,
+			"startTime": "2020-06-29T18:45:00Z",
+			"delay": "00:00:00",
+			"maxConcurrency": 50,
+			"retryPolicy": {
+				"intervalInSeconds": 30
+			},
+			"dependsOn": []
+		}
+	}
+}

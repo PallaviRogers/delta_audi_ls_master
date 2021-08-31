@@ -1,0 +1,99 @@
+{
+	"name": "pl_audi_hhid",
+	"properties": {
+		"activities": [
+			{
+				"name": "media_hhid_processor_nbk",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/hhid/media_hhid_processor",
+					"libraries": [
+						{
+							"jar": "dbfs:/FileStore/jars/851455c3_6366_4c95_b21a_3d502012b648-graphframes_0_7_0_spark2_3_s_2_11-5eb78.jar"
+						}
+					]
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "ip_address_loader",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "media_hhid_processor_nbk",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/hhid/ipaddress_uuid_loader",
+					"libraries": [
+						{
+							"jar": "dbfs:/FileStore/jars/851455c3_6366_4c95_b21a_3d502012b648-graphframes_0_7_0_spark2_3_s_2_11-5eb78.jar"
+						}
+					]
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "pid_loader",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "ip_address_loader",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/hhid/pid_loader",
+					"libraries": [
+						{
+							"jar": "dbfs:/FileStore/jars/851455c3_6366_4c95_b21a_3d502012b648-graphframes_0_7_0_spark2_3_s_2_11-5eb78.jar"
+						}
+					]
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2021-03-22T22:20:47Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

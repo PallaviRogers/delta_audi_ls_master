@@ -1,0 +1,86 @@
+{
+	"name": "pl_audi_dfp_analysis_load",
+	"properties": {
+		"description": "Pipeline to load data to networkimpressions_analysis table",
+		"activities": [
+			{
+				"name": "daily_or_historical",
+				"description": "This processor will check whether the parameter passed to the pipeline is \"daily\" or not. According to the parameter, different notebooks will be called.",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.load_type,'daily')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "dfp_analysis_load_historical",
+							"description": "Notebook to load historical data to networkimpressions_analysis table",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/dfp/dfp_impression_analysis_dataload_historical",
+								"baseParameters": {
+									"inputYear": {
+										"value": "@pipeline().parameters.input_year",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "dfp_analysis_load_daily",
+							"description": "Notebook to load daily incremental data to networkimpressions_analysis table",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/dfp/dfp_impression_analysis_dataload_daily"
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"load_type": {
+				"type": "string",
+				"defaultValue": "daily"
+			},
+			"input_year": {
+				"type": "string",
+				"defaultValue": "0"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

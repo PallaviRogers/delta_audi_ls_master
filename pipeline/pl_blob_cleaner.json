@@ -1,0 +1,131 @@
+{
+	"name": "pl_blob_cleaner",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get Metadata for raw container folder",
+				"description": "Get Metadata for raw container folder",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_audi_hdp_onprem_snk",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@pipeline().parameters.TABLENAME",
+								"type": "Expression"
+							},
+							"schemaname": {
+								"value": "@pipeline().parameters.SCHEMANAME",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"exists",
+						"itemName",
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					}
+				}
+			},
+			{
+				"name": "If folder exists",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Get Metadata for raw container folder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@activity('Get Metadata for raw container folder').output.exists",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Delete raw data",
+							"description": "Deleting  last run raw container data",
+							"type": "Delete",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "ds_delete_adls",
+									"type": "DatasetReference",
+									"parameters": {
+										"filename": {
+											"value": "@pipeline().parameters.TABLENAME",
+											"type": "Expression"
+										},
+										"schemaname": {
+											"value": "@pipeline().parameters.SCHEMANAME",
+											"type": "Expression"
+										}
+									}
+								},
+								"logStorageSettings": {
+									"linkedServiceName": {
+										"referenceName": "ls_azure_blob",
+										"type": "LinkedServiceReference"
+									},
+									"path": {
+										"value": "@concat(variables('V_LOGS_CONTAINER') ,'/',pipeline().parameters.SCHEMANAME,'/',pipeline().parameters.TABLENAME)",
+										"type": "Expression"
+									}
+								},
+								"enableLogging": true,
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"TABLENAME": {
+				"type": "string"
+			},
+			"SCHEMANAME": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"V_LOGS_CONTAINER": {
+				"type": "String",
+				"defaultValue": "logs"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-04-06T17:15:21Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

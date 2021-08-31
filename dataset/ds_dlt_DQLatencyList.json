@@ -1,0 +1,77 @@
+{
+	"name": "ds_dlt_DQLatencyList",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_databricks_delta",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "DQ"
+		},
+		"annotations": [],
+		"type": "AzureDatabricksDeltaLakeDataset",
+		"typeProperties": {
+			"database": "dq",
+			"table": "dqlatencylist"
+		},
+		"schema": [
+			{
+				"name": "PartitionKey",
+				"type": "string"
+			},
+			{
+				"name": "RowKey",
+				"type": "string"
+			},
+			{
+				"name": "Timestamp",
+				"type": "string"
+			},
+			{
+				"name": "RuleId",
+				"type": "string"
+			},
+			{
+				"name": "TgtDatabase",
+				"type": "string"
+			},
+			{
+				"name": "TgtSchema",
+				"type": "string"
+			},
+			{
+				"name": "TgtTable",
+				"type": "string"
+			},
+			{
+				"name": "LatencyDateColumn",
+				"type": "string"
+			},
+			{
+				"name": "LatencyDateDataType",
+				"type": "string"
+			},
+			{
+				"name": "TgtQuery",
+				"type": "string"
+			},
+			{
+				"name": "ThresholdGreen",
+				"type": "long"
+			},
+			{
+				"name": "ThresholdRed",
+				"type": "long"
+			},
+			{
+				"name": "ThresholdYellow",
+				"type": "long"
+			},
+			{
+				"name": "Enabled",
+				"type": "string"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

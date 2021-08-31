@@ -1,0 +1,150 @@
+{
+	"name": "pl_audi_dfp_analysis_historical_load",
+	"properties": {
+		"description": "Pipeline to historical load data to networkimpressions_analysis table",
+		"activities": [
+			{
+				"name": "dfp_analysis_load_historical_part2",
+				"description": "Notebook to load historical data to networkimpressions_analysis table",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "dfp_analysis_load_loop",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/dfp/dfp_impression_analysis_dataload_historical_part_2"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "dfp_analysis_load_loop",
+				"description": "Looping months to load data",
+				"type": "Until",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(int(variables('counter')), 12)",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Set Counter",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Increment Temp Counter",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "counter",
+								"value": {
+									"value": "@variables('temp_counter')",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Increment Temp Counter",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "dfp_analysis_load_historical_part1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "temp_counter",
+								"value": {
+									"value": "@string(add(int(variables('counter')),3))",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "dfp_analysis_load_historical_part1",
+							"description": "Notebook to load historical data to networkimpressions_analysis table",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/dfp/dfp_impression_analysis_dataload_historical_part_1",
+								"baseParameters": {
+									"inputYear": {
+										"value": "@pipeline().parameters.input_year",
+										"type": "Expression"
+									},
+									"inputMonth1": {
+										"value": "@variables('counter')",
+										"type": "Expression"
+									},
+									"inputMonth2": {
+										"value": "@string(add(int(variables('counter')),1))",
+										"type": "Expression"
+									},
+									"inputMonth3": {
+										"value": "@string(add(int(variables('counter')),2))",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"timeout": "24.00:00:00"
+				}
+			}
+		],
+		"parameters": {
+			"input_year": {
+				"type": "string",
+				"defaultValue": "0"
+			}
+		},
+		"variables": {
+			"counter": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"temp_counter": {
+				"type": "String",
+				"defaultValue": "1"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-07-06T21:09:39Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

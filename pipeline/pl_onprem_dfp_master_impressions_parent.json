@@ -1,0 +1,86 @@
+{
+	"name": "pl_onprem_dfp_master_impressions_parent",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach_FileName",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.filename",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "fileName",
+							"description": "Individual filenames to be processed",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "fName",
+								"value": {
+									"value": "@item()",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "pl_onprem_dfp_master_impressions",
+							"type": "ExecutePipeline",
+							"dependsOn": [
+								{
+									"activity": "fileName",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_onprem_dfp_master_impressions",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"filename": {
+										"value": "@activity('fileName').value",
+										"type": "Expression"
+									},
+									"DateRange": [
+										"09/23/2019 05:00:00,09/24/2019 05:00:00"
+									]
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"filename": {
+				"type": "array",
+				"defaultValue": [
+					"NetworkImpressions",
+					"NetworkImpressions_audiencesegment",
+					"NetworkImpressions_customtargeting",
+					"NetworkBackfillImpressions",
+					"NetworkBackfillImpressions_audiencesegment",
+					"NetworkBackfillImpressions_customtargeting"
+				]
+			}
+		},
+		"variables": {
+			"fName": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-03-22T22:20:48Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

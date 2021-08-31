@@ -1,0 +1,24 @@
+{
+	"name": "ds_elt_load_control",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_az_storage_table",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"AZ_STORAGE_TABLE": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureTable",
+		"schema": [],
+		"typeProperties": {
+			"tableName": {
+				"value": "@dataset().AZ_STORAGE_TABLE",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

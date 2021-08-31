@@ -1,0 +1,24 @@
+{
+	"name": "ds_json_DQruleValidationList",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_adls",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "DQ"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "DQRuleValidationList",
+				"folderPath": "DQ/DQRuleValidationList",
+				"fileSystem": "audi"
+			}
+		},
+		"schema": {}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

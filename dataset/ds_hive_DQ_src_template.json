@@ -1,0 +1,16 @@
+{
+	"name": "ds_hive_DQ_src_template",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_odbc_hive",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "DQ"
+		},
+		"annotations": [],
+		"type": "OdbcTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

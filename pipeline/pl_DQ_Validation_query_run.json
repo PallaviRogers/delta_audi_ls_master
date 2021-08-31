@@ -1,0 +1,610 @@
+{
+	"name": "pl_DQ_Validation_query_run",
+	"properties": {
+		"activities": [
+			{
+				"name": "Switch_S",
+				"type": "Switch",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"on": {
+						"value": "@pipeline().parameters.Database",
+						"type": "Expression"
+					},
+					"cases": [
+						{
+							"value": "Hadoop",
+							"activities": [
+								{
+									"name": "Copy_Hadoop_to_Table",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "OdbcSource",
+											"query": {
+												"value": "@concat(\n'SELECT ''',\npipeline().parameters.RuleId, ''' AS RuleId, ''', \npipeline().parameters.RunDate, ''' AS RunDate, ', \n' COALESCE( ''', pipeline().parameters.RunId, ''', 0) AS RunId, ', \n' FROM_UNIXTIME(UNIX_TIMESTAMP( ''', pipeline().TriggerTime, ''',\"yyyy-MM-dd''T''HH:mm:ss\"),\"yyyy-MM-dd HH:mm:ss\") AS InsertTs, ', \n'QO.ExpectedCount, QO.ActualCount FROM (SELECT ', \npipeline().parameters.ExpectedCountExpression, ' AS ExpectedCount, ', \npipeline().parameters.ActualCountExpression, ' AS ActualCount ',\n' FROM ',\npipeline().parameters.Schema, '.', pipeline().parameters.Table,\n' ) QO'\n)",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00"
+										},
+										"sink": {
+											"type": "AzureDatabricksDeltaLakeSink",
+											"importSettings": {
+												"type": "AzureDatabricksDeltaLakeImportCommand",
+												"dateFormat": "yyyy-MM-dd",
+												"timestampFormat": "yyyy-MM-dd HH:mm:ss"
+											}
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "ls_audi_adls",
+												"type": "LinkedServiceReference"
+											},
+											"path": "audi/stage"
+										},
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"name": "ruleid",
+														"type": "String"
+													},
+													"sink": {
+														"name": "RuleId",
+														"type": "Int"
+													}
+												},
+												{
+													"source": {
+														"name": "rundate",
+														"type": "String"
+													},
+													"sink": {
+														"name": "RunDate",
+														"type": "DateTime"
+													}
+												},
+												{
+													"source": {
+														"name": "runid",
+														"type": "String"
+													},
+													"sink": {
+														"name": "RunId",
+														"type": "string"
+													}
+												},
+												{
+													"source": {
+														"name": "insertts",
+														"type": "String"
+													},
+													"sink": {
+														"name": "InsertTs",
+														"type": "DateTime"
+													}
+												},
+												{
+													"source": {
+														"name": "qo.expectedcount",
+														"type": "Int64"
+													},
+													"sink": {
+														"name": "ExpectedCount",
+														"type": "Int64"
+													}
+												},
+												{
+													"source": {
+														"name": "qo.actualcount",
+														"type": "Int64"
+													},
+													"sink": {
+														"name": "ActualCount",
+														"type": "Int64"
+													}
+												}
+											]
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_hive_DQ_src_template",
+											"type": "DatasetReference"
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_dlt_DQValidationOutput",
+											"type": "DatasetReference"
+										}
+									]
+								}
+							]
+						},
+						{
+							"value": "Azure",
+							"activities": [
+								{
+									"name": "copy_from_Azure",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureDatabricksDeltaLakeSource",
+											"query": {
+												"value": "@concat(\n'SELECT ''',\npipeline().parameters.RuleId, ''' AS RuleId, ''', \npipeline().parameters.RunDate, ''' AS RunDate, ', \n' COALESCE( ''', pipeline().parameters.RunId, ''', 0) AS RunId, ', \n' FROM_UNIXTIME(UNIX_TIMESTAMP(LPAD( ''', pipeline().TriggerTime, ''',19,''''),\"yyyy-MM-dd''T''HH:mm:ss\"),\"yyyy-MM-dd HH:mm:ss\") AS InsertTs, ', \n'QO.ExpectedCount, QO.ActualCount FROM (SELECT ', \npipeline().parameters.ExpectedCountExpression, ' AS ExpectedCount, ', \npipeline().parameters.ActualCountExpression, ' AS ActualCount ',\n' FROM ',\npipeline().parameters.Schema, '.', pipeline().parameters.Table,\n' ) QO'\n)",
+												"type": "Expression"
+											},
+											"exportSettings": {
+												"type": "AzureDatabricksDeltaLakeExportCommand",
+												"dateFormat": "yyyy-MM-dd",
+												"timestampFormat": "yyyy-MM-dd HH:mm:ss"
+											}
+										},
+										"sink": {
+											"type": "AzureDatabricksDeltaLakeSink",
+											"importSettings": {
+												"type": "AzureDatabricksDeltaLakeImportCommand",
+												"dateFormat": "yyyy-MM-dd",
+												"timestampFormat": "yyyy-MM-dd HH:mm:ss"
+											}
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "ls_audi_adls",
+												"type": "LinkedServiceReference"
+											},
+											"path": "audi/stage"
+										},
+										"enableSkipIncompatibleRow": true,
+										"logSettings": {
+											"enableCopyActivityLog": true,
+											"copyActivityLogSettings": {
+												"logLevel": "Warning",
+												"enableReliableLogging": false
+											},
+											"logLocationSettings": {
+												"linkedServiceName": {
+													"referenceName": "ls_audi_adls",
+													"type": "LinkedServiceReference"
+												},
+												"path": "logs"
+											}
+										},
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"name": "RuleId",
+														"type": "string"
+													},
+													"sink": {
+														"name": "RuleId",
+														"type": "Int"
+													}
+												},
+												{
+													"source": {
+														"name": "RunDate",
+														"type": "string"
+													},
+													"sink": {
+														"name": "RunDate",
+														"type": "DateTime"
+													}
+												},
+												{
+													"source": {
+														"name": "RunId",
+														"type": "string"
+													},
+													"sink": {
+														"name": "RunId",
+														"type": "string"
+													}
+												},
+												{
+													"source": {
+														"name": "InsertTs",
+														"type": "string"
+													},
+													"sink": {
+														"name": "InsertTs",
+														"type": "DateTime"
+													}
+												},
+												{
+													"source": {
+														"name": "ExpectedCount",
+														"type": "Int64"
+													},
+													"sink": {
+														"name": "ExpectedCount",
+														"type": "Int64"
+													}
+												},
+												{
+													"source": {
+														"name": "ActualCount",
+														"type": "Int64"
+													},
+													"sink": {
+														"name": "ActualCount",
+														"type": "Int64"
+													}
+												}
+											]
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_dlt_DQ_src_template",
+											"type": "DatasetReference"
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_dlt_DQValidationOutput",
+											"type": "DatasetReference"
+										}
+									]
+								}
+							]
+						},
+						{
+							"value": "ELAPROD",
+							"activities": [
+								{
+									"name": "Copy_from_ELAPROD",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "OracleSource",
+											"oracleReaderQuery": {
+												"value": "@concat(\n'SELECT ''',\npipeline().parameters.RuleId, ''' AS RuleId, ''', \npipeline().parameters.RunDate, ''' AS RunDate, ', \n' COALESCE( ''', pipeline().parameters.RunId, ''', 0) AS RunId, ', \n' TO_TIMESTAMP(SUBSTR( ''', pipeline().TriggerTime, ''',1,19),''YYYY-MM-DD\"T\"HH24:MI:SS'') as InsertTs, ', \n'QO.ExpectedCount, QO.ActualCount FROM (SELECT ', \npipeline().parameters.ExpectedCountExpression, ' AS ExpectedCount, ', \npipeline().parameters.ActualCountExpression, ' AS ActualCount ',\n' FROM ',\npipeline().parameters.Schema, '.', pipeline().parameters.Table,\n' ) QO'\n)",
+												"type": "Expression"
+											},
+											"partitionOption": "None",
+											"queryTimeout": "02:00:00"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "ls_audi_adls",
+												"type": "LinkedServiceReference"
+											},
+											"path": "audi/stage"
+										},
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"name": "RULEID",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 1
+													}
+												},
+												{
+													"source": {
+														"name": "RUNDATE",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 2
+													}
+												},
+												{
+													"source": {
+														"name": "RUNID",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 3
+													}
+												},
+												{
+													"source": {
+														"name": "INSERT_TS",
+														"type": "DateTime"
+													},
+													"sink": {
+														"type": "DateTime",
+														"ordinal": 4
+													}
+												},
+												{
+													"source": {
+														"name": "QUERYSIDE",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 5
+													}
+												},
+												{
+													"source": {
+														"name": "AGGGROUP",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 6
+													}
+												},
+												{
+													"source": {
+														"name": "AGGVALUE",
+														"type": "Double"
+													},
+													"sink": {
+														"type": "Double",
+														"ordinal": 7
+													}
+												}
+											]
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_ora_DQ_ela_src_template",
+											"type": "DatasetReference"
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_csv_dq_recon_queryout",
+											"type": "DatasetReference"
+										}
+									]
+								}
+							]
+						},
+						{
+							"value": "BDWPROD",
+							"activities": [
+								{
+									"name": "Copy_from_BDWPROD",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "OracleSource",
+											"oracleReaderQuery": {
+												"value": "@concat(\n'SELECT ''',\npipeline().parameters.RuleId, ''' AS RuleId, ''', \npipeline().parameters.RunDate, ''' AS RunDate, ', \n' COALESCE( ''', pipeline().parameters.RunId, ''', 0) AS RunId, ', \n' TO_TIMESTAMP(SUBSTR( ''', pipeline().TriggerTime, ''',1,19),''YYYY-MM-DD\"T\"HH24:MI:SS'') as InsertTs, ', \n'QO.ExpectedCount, QO.ActualCount FROM (SELECT ', \npipeline().parameters.ExpectedCountExpression, ' AS ExpectedCount, ', \npipeline().parameters.ActualCountExpression, ' AS ActualCount ',\n' FROM ',\npipeline().parameters.Schema, '.', pipeline().parameters.Table,\n' ) QO'\n)",
+												"type": "Expression"
+											},
+											"partitionOption": "None",
+											"queryTimeout": "02:00:00"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "ls_audi_adls",
+												"type": "LinkedServiceReference"
+											},
+											"path": "audi/stage"
+										},
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"name": "RULEID",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 1
+													}
+												},
+												{
+													"source": {
+														"name": "RUNDATE",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 2
+													}
+												},
+												{
+													"source": {
+														"name": "RUNID",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 3
+													}
+												},
+												{
+													"source": {
+														"name": "INSERT_TS",
+														"type": "DateTime"
+													},
+													"sink": {
+														"type": "DateTime",
+														"ordinal": 4
+													}
+												},
+												{
+													"source": {
+														"name": "QUERYSIDE",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 5
+													}
+												},
+												{
+													"source": {
+														"name": "AGGGROUP",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 6
+													}
+												},
+												{
+													"source": {
+														"name": "AGGVALUE",
+														"type": "Double"
+													},
+													"sink": {
+														"type": "Double",
+														"ordinal": 7
+													}
+												}
+											]
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_ora_DQ_bdw_src_template",
+											"type": "DatasetReference"
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_csv_dq_recon_queryout",
+											"type": "DatasetReference"
+										}
+									]
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"Database": {
+				"type": "string",
+				"defaultValue": "Azure"
+			},
+			"Schema": {
+				"type": "string",
+				"defaultValue": "drvd_mbuadl_agg_nonpi"
+			},
+			"Table": {
+				"type": "string",
+				"defaultValue": "customer_info"
+			},
+			"ValidationColumn": {
+				"type": "string",
+				"defaultValue": "age"
+			},
+			"ExpectedCountExpression": {
+				"type": "string",
+				"defaultValue": "'1'"
+			},
+			"ActualCountExpression": {
+				"type": "string",
+				"defaultValue": "'1'"
+			},
+			"RuleId": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"RunDate": {
+				"type": "string",
+				"defaultValue": "2020-01-01"
+			},
+			"RunId": {
+				"type": "string",
+				"defaultValue": "0"
+			}
+		},
+		"variables": {
+			"vRuleId": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"vRunDate": {
+				"type": "String",
+				"defaultValue": "2020-01-01"
+			},
+			"vQuery": {
+				"type": "String",
+				"defaultValue": "select 10 as ExpectedCountExpression, 10 as ActualCountExpression"
+			}
+		},
+		"folder": {
+			"name": "DQ/DQ_Validation"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-08-17T17:23:29Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

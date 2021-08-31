@@ -1,0 +1,34 @@
+{
+	"name": "ds_audi_s3_zeotap_src",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_s3_zeotap",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"src_directory_Name": {
+				"type": "string"
+			},
+			"fileName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AmazonS3Location",
+				"bucketName": "zt-rogers-ca",
+				"folderPath": {
+					"value": "@dataset().src_directory_Name",
+					"type": "Expression"
+				},
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				}
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,34 @@
+{
+	"name": "ds_dmt_ssadls_snk",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_dmtssdls",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"directoryName": {
+				"type": "string"
+			},
+			"container_name": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": {
+					"value": "@dataset().directoryName",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().container_name",
+					"type": "Expression"
+				}
+			},
+			"compressionCodec": "snappy"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

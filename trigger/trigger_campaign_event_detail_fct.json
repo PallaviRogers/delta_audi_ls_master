@@ -1,0 +1,32 @@
+{
+	"name": "trigger_campaign_event_detail_fct",
+	"properties": {
+		"description": "loads simplifi.campaign_event_detail_fct from on-prem hive",
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipeline": {
+			"pipelineReference": {
+				"referenceName": "pl_onprem_adls_delta_audi",
+				"type": "PipelineReference"
+			},
+			"parameters": {
+				"windowStart": "@{trigger().outputs.windowStartTime} ",
+				"windowEnd": "@{trigger().outputs.windowEndTime}",
+				"schemaname": "simplifi",
+				"tablename": "campaign_event_detail_fct"
+			}
+		},
+		"type": "TumblingWindowTrigger",
+		"typeProperties": {
+			"frequency": "Minute",
+			"interval": 15,
+			"startTime": "2020-06-01T14:30:00Z",
+			"delay": "00:00:00",
+			"maxConcurrency": 50,
+			"retryPolicy": {
+				"intervalInSeconds": 30
+			},
+			"dependsOn": []
+		}
+	}
+}

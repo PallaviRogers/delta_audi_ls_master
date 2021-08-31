@@ -1,0 +1,36 @@
+{
+	"name": "ds_audi_azure_parquet_snk",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_azure_blob",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"schemaname": {
+				"type": "string"
+			},
+			"filename": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@dataset().filename",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@concat('raw_',concat(dataset().schemaname,concat('/',dataset().filename)))",
+					"type": "Expression"
+				},
+				"container": "audi"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

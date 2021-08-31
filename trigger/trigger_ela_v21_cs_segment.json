@@ -1,0 +1,42 @@
+{
+	"name": "trigger_ela_v21_cs_segment",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_audi_ela_azure",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schema_name": "ela_ecss",
+					"src_table_name": "cs_segment",
+					"column_list": "SEGMENT_ID,SEGMENT_DESC,SEGMENT_DESC_F,ACTIVE_IND ",
+					"tgt_table_name": "cs_segment_audi",
+					"filter_condition": "  where 1 =1 "
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2021-01-27T15:37:00",
+				"timeZone": "Eastern Standard Time",
+				"schedule": {
+					"minutes": [
+						40
+					],
+					"hours": [
+						14
+					],
+					"weekDays": [
+						"Sunday"
+					]
+				}
+			}
+		}
+	}
+}

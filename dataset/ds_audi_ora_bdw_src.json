@@ -1,0 +1,32 @@
+{
+	"name": "ds_audi_ora_bdw_src",
+	"properties": {
+		"description": "This is to copy data from on prem BDW DB to Azure",
+		"linkedServiceName": {
+			"referenceName": "ls_audi_onprem_bdw",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"schemaName": {
+				"type": "string"
+			},
+			"tableName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "OracleTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().schemaName",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().tableName",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

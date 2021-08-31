@@ -1,0 +1,33 @@
+{
+	"name": "trigger_daily_incremental_dfp",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_gcs_s3_dfp_incremental_master",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"filename": [
+						"NetworkClicks",
+						"NetworkBackfillClicks",
+						"NetworkBackfillImpressions",
+						"NetworkImpressions",
+						"NetworkActivities"
+					]
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 24,
+				"startTime": "2020-05-29T15:00:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

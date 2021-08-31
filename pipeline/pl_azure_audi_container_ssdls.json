@@ -1,0 +1,201 @@
+{
+	"name": "pl_azure_audi_container_ssdls",
+	"properties": {
+		"description": "This is to copy files from one container to other",
+		"activities": [
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Get Metadata1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get Metadata1').output.childitems",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Copy data1_copy1",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "source_folder",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "target_folder",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "BinarySource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": false,
+										"deleteFilesAfterCompletion": false
+									},
+									"formatSettings": {
+										"type": "BinaryReadSettings"
+									}
+								},
+								"sink": {
+									"type": "BinarySink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									}
+								},
+								"enableStaging": false,
+								"skipErrorFile": {
+									"fileMissing": false
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_audi_azure_blob_sink",
+									"type": "DatasetReference",
+									"parameters": {
+										"directoryName": {
+											"value": "@variables('source_folder')",
+											"type": "Expression"
+										},
+										"container_name": {
+											"value": "@pipeline().parameters.source_container",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_dmt_ssadls_snk",
+									"type": "DatasetReference",
+									"parameters": {
+										"directoryName": "@variables('target_folder')",
+										"container_name": "@pipeline().parameters.target_container"
+									}
+								}
+							]
+						},
+						{
+							"name": "source_folder",
+							"description": "@activity('Get Metadata1').output.childItems",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "source_folder",
+								"value": {
+									"value": "@concat(pipeline().parameters.source_folder,item().name)",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "target_folder",
+							"description": "@activity('Get Metadata1').output.childItems",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "target_folder",
+								"value": {
+									"value": "@concat(pipeline().parameters.target_folder,item().name)",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Get Metadata1",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_audi_azure_blob_sink",
+						"type": "DatasetReference",
+						"parameters": {
+							"directoryName": {
+								"value": "@pipeline().parameters.source_folder",
+								"type": "Expression"
+							},
+							"container_name": {
+								"value": "@pipeline().parameters.source_container",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true
+					},
+					"formatSettings": {
+						"type": "BinaryReadSettings"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"source_folder": {
+				"type": "string",
+				"defaultValue": "crtd_app_ibro/ibro_subscriber_activity/"
+			},
+			"source_container": {
+				"type": "string",
+				"defaultValue": "curated"
+			},
+			"target_container": {
+				"type": "string",
+				"defaultValue": "rogers-eda-derived-dev-sensitive-storage"
+			},
+			"target_folder": {
+				"type": "string",
+				"defaultValue": "oracle/app_ibro/ibro_subscriber_activity/"
+			}
+		},
+		"variables": {
+			"source_folder": {
+				"type": "String"
+			},
+			"target_folder": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-03-22T22:20:46Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

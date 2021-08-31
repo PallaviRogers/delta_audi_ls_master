@@ -1,0 +1,308 @@
+{
+	"name": "pl_onprem_adls_delta_audi",
+	"properties": {
+		"activities": [
+			{
+				"name": "copy orc delta files onprem to adls",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "OrcSource",
+						"storeSettings": {
+							"type": "HdfsReadSettings",
+							"recursive": true,
+							"modifiedDatetimeStart": {
+								"value": "@pipeline().parameters.windowStart",
+								"type": "Expression"
+							},
+							"modifiedDatetimeEnd": {
+								"value": "@pipeline().parameters.windowEnd",
+								"type": "Expression"
+							},
+							"wildcardFileName": "*",
+							"enablePartitionDiscovery": false
+						}
+					},
+					"sink": {
+						"type": "OrcSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings",
+							"copyBehavior": "PreserveHierarchy"
+						},
+						"formatSettings": {
+							"type": "OrcWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_audi_hdp_onprem_src",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@pipeline().parameters.tablename",
+								"type": "Expression"
+							},
+							"schemaname": {
+								"value": "@pipeline().parameters.schemaname",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_audi_hdp_onprem_snk",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@pipeline().parameters.tablename",
+								"type": "Expression"
+							},
+							"schemaname": {
+								"value": "@pipeline().parameters.schemaname",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "If source has new files",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "check new files in landing folder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('check new files in landing folder').output.exists,true)",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "send email no files in source",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/mbuadl_agg/send_email",
+								"baseParameters": {
+									"schemaname": {
+										"value": "@pipeline().parameters.schemaname",
+										"type": "Expression"
+									},
+									"filename": {
+										"value": "@pipeline().parameters.tablename",
+										"type": "Expression"
+									},
+									"pipeline_name": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"pipeline_id": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"start_date": {
+										"value": "@pipeline().parameters.windowStart",
+										"type": "Expression"
+									},
+									"end_date": {
+										"value": "@pipeline().parameters.windowEnd",
+										"type": "Expression"
+									},
+									"reason": "No new files in on-prem HDFS for "
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "load processor",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": {
+									"value": "@if(startswith(pipeline().parameters.tablename,'tsc'),'/mbuadl_agg/audi_delta_table_processor_tsc',if(startswith(pipeline().parameters.tablename,'stb'),'/mbuadl_agg/audi_delta_table_processor_stb',if(startswith(pipeline().parameters.tablename,'customer_segment_by_location'),'/mbuadl_agg/audi_delta_table_processor_intersec',if(startswith(pipeline().parameters.tablename,'geotxt_message_detail_sumfct'),'/mbuadl_agg/audi_delta_table_processor_intersec','/mbuadl_agg/audi_delta_table_processor'))))\n",
+									"type": "Expression"
+								},
+								"baseParameters": {
+									"filename": {
+										"value": "@pipeline().parameters.tablename",
+										"type": "Expression"
+									},
+									"schemaname": {
+										"value": "@pipeline().parameters.schemaname",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_audi_databricks_v8x",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "check new files in landing folder",
+				"type": "GetMetadata",
+				"dependsOn": [
+					{
+						"activity": "copy orc delta files onprem to adls",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_audi_hdp_onprem_snk",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@concat(pipeline().parameters.tablename,'/')",
+								"type": "Expression"
+							},
+							"schemaname": "@pipeline().parameters.schemaname"
+						}
+					},
+					"fieldList": [
+						"exists"
+					],
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"wildcardFolderPath": "*"
+					}
+				}
+			},
+			{
+				"name": "if incremental load fails send email",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "If source has new files",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/mbuadl_agg/send_email",
+					"baseParameters": {
+						"schemaname": {
+							"value": "@pipeline().parameters.schemaname",
+							"type": "Expression"
+						},
+						"filename": {
+							"value": "@pipeline().parameters.tablename",
+							"type": "Expression"
+						},
+						"pipeline_name": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"pipeline_id": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"start_date": {
+							"value": "@pipeline().parameters.windowStart",
+							"type": "Expression"
+						},
+						"end_date": {
+							"value": "@pipeline().parameters.windowEnd",
+							"type": "Expression"
+						},
+						"activity_output": {
+							"value": "@activity('load processor').output.runPageUrl",
+							"type": "Expression"
+						},
+						"reason": "Incremental load failed for "
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_audi_databricks_v8x",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"windowStart": {
+				"type": "string"
+			},
+			"windowEnd": {
+				"type": "string"
+			},
+			"schemaname": {
+				"type": "string",
+				"defaultValue": "mbuadl_agg_nonpi"
+			},
+			"tablename": {
+				"type": "string",
+				"defaultValue": "advertiser_dim"
+			}
+		},
+		"variables": {
+			"files": {
+				"type": "Boolean"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-05-19T03:49:14Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,49 @@
+{
+	"name": "ds_dlt_DQLatencyOutput",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_databricks_delta",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "DQ"
+		},
+		"annotations": [],
+		"type": "AzureDatabricksDeltaLakeDataset",
+		"typeProperties": {
+			"database": "dq",
+			"table": "dqlatencyoutput"
+		},
+		"schema": [
+			{
+				"name": "RuleId",
+				"type": "integer"
+			},
+			{
+				"name": "RunDate",
+				"type": "date"
+			},
+			{
+				"name": "RunId",
+				"type": "integer"
+			},
+			{
+				"name": "InsertTs",
+				"type": "timestamp"
+			},
+			{
+				"name": "QuerySide",
+				"type": "string"
+			},
+			{
+				"name": "AggGroup",
+				"type": "string"
+			},
+			{
+				"name": "AggValue",
+				"type": "double"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

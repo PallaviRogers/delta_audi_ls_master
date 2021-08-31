@@ -1,0 +1,620 @@
+{
+	"name": "pl_DQ_query_run",
+	"properties": {
+		"activities": [
+			{
+				"name": "Switch_S",
+				"type": "Switch",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"on": {
+						"value": "@pipeline().parameters.Database",
+						"type": "Expression"
+					},
+					"cases": [
+						{
+							"value": "Hadoop",
+							"activities": [
+								{
+									"name": "Copy_Hadoop_to_Table",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "OdbcSource",
+											"query": {
+												"value": "@concat(\n'select ''',\npipeline().parameters.RuleId,\n''' as RuleId,''',\npipeline().parameters.RunDate,\n''' as RunDate,coalesce(''',\npipeline().parameters.RunId,\n''',0) as RunId,',\n'from_unixtime(unix_timestamp(''',\npipeline().TriggerTime,\n''',\"yyyy-MM-dd''T''HH:mm:ss\"),\"yyyy-MM-dd HH:mm:ss\") as insert_ts,''',\npipeline().parameters.QueryFor,\n''' as QuerySide,',\n'qo.aggGroup, qo.aggValue from (',\npipeline().parameters.Query,\n') qo'\n)",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"name": "ruleid",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"physicalType": "String",
+														"ordinal": 1
+													}
+												},
+												{
+													"source": {
+														"name": "rundate",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"physicalType": "String",
+														"ordinal": 2
+													}
+												},
+												{
+													"source": {
+														"name": "runid",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"physicalType": "String",
+														"ordinal": 3
+													}
+												},
+												{
+													"source": {
+														"name": "insert_ts",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"physicalType": "String",
+														"ordinal": 4
+													}
+												},
+												{
+													"source": {
+														"name": "queryside",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"physicalType": "String",
+														"ordinal": 5
+													}
+												},
+												{
+													"source": {
+														"name": "qo.agggroup",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"physicalType": "String",
+														"ordinal": 6
+													}
+												},
+												{
+													"source": {
+														"name": "qo.aggvalue",
+														"type": "Double"
+													},
+													"sink": {
+														"type": "Double",
+														"physicalType": "Double",
+														"ordinal": 7
+													}
+												}
+											],
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false,
+												"dateTimeFormat": "yyyy-MM-dd"
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_hive_DQ_src_template",
+											"type": "DatasetReference"
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_csv_dq_recon_queryout",
+											"type": "DatasetReference"
+										}
+									]
+								}
+							]
+						},
+						{
+							"value": "Azure",
+							"activities": [
+								{
+									"name": "copy_from_Azure",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureDatabricksDeltaLakeSource",
+											"query": {
+												"value": "@concat(\n'select ''',\npipeline().parameters.RuleId,\n''' as RuleId,''',\npipeline().parameters.RunDate,\n''' as RunDate,coalesce(''',\npipeline().parameters.RunId,\n''',0) as RunId,',\n'from_unixtime(unix_timestamp(lpad(''',\npipeline().TriggerTime,\n''',19,''''),\"yyyy-MM-dd''T''HH:mm:ss\"),\"yyyy-MM-dd HH:mm:ss\") as insert_ts,''',\npipeline().parameters.QueryFor,\n''' as QuerySide,',\n'qo.aggGroup, qo.aggValue from (',\npipeline().parameters.Query,\n') qo'\n)",
+												"type": "Expression"
+											},
+											"exportSettings": {
+												"type": "AzureDatabricksDeltaLakeExportCommand"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "ls_audi_adls",
+												"type": "LinkedServiceReference"
+											},
+											"path": "audi/stage"
+										},
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"name": "RuleId",
+														"type": "string"
+													},
+													"sink": {
+														"type": "string",
+														"ordinal": 1
+													}
+												},
+												{
+													"source": {
+														"name": "RunDate",
+														"type": "string"
+													},
+													"sink": {
+														"type": "string",
+														"ordinal": 2
+													}
+												},
+												{
+													"source": {
+														"name": "RunId",
+														"type": "string"
+													},
+													"sink": {
+														"type": "string",
+														"ordinal": 3
+													}
+												},
+												{
+													"source": {
+														"name": "insert_ts",
+														"type": "string"
+													},
+													"sink": {
+														"type": "string",
+														"ordinal": 4
+													}
+												},
+												{
+													"source": {
+														"name": "QuerySide",
+														"type": "string"
+													},
+													"sink": {
+														"type": "string",
+														"ordinal": 5
+													}
+												},
+												{
+													"source": {
+														"name": "aggGroup",
+														"type": "string"
+													},
+													"sink": {
+														"type": "string",
+														"ordinal": 6
+													}
+												},
+												{
+													"source": {
+														"name": "aggValue"
+													},
+													"sink": {
+														"type": "Double",
+														"ordinal": 7
+													}
+												}
+											]
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_dlt_DQ_src_template",
+											"type": "DatasetReference"
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_csv_dq_recon_queryout",
+											"type": "DatasetReference"
+										}
+									]
+								}
+							]
+						},
+						{
+							"value": "ELAPROD",
+							"activities": [
+								{
+									"name": "Copy_from_ELAPROD",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "OracleSource",
+											"oracleReaderQuery": {
+												"value": "@concat(\n'select ''',\npipeline().parameters.RuleId,\n''' as RuleId,''',\npipeline().parameters.RunDate,\n''' as RunDate,coalesce(''',\npipeline().parameters.RunId,\n''',''0'') as RunId,',\n'to_timestamp(substr(''',\npipeline().TriggerTime,\n''',1,19),''YYYY-MM-DD\"T\"HH24:MI:SS'') as insert_ts,''',\npipeline().parameters.QueryFor,\n''' as QuerySide,',\n'qo.aggGroup, qo.aggValue from (',\npipeline().parameters.Query,\n') qo'\n)",
+												"type": "Expression"
+											},
+											"partitionOption": "None",
+											"queryTimeout": "02:00:00"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "ls_audi_adls",
+												"type": "LinkedServiceReference"
+											},
+											"path": "audi/stage"
+										},
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"name": "RULEID",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 1
+													}
+												},
+												{
+													"source": {
+														"name": "RUNDATE",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 2
+													}
+												},
+												{
+													"source": {
+														"name": "RUNID",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 3
+													}
+												},
+												{
+													"source": {
+														"name": "INSERT_TS",
+														"type": "DateTime"
+													},
+													"sink": {
+														"type": "DateTime",
+														"ordinal": 4
+													}
+												},
+												{
+													"source": {
+														"name": "QUERYSIDE",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 5
+													}
+												},
+												{
+													"source": {
+														"name": "AGGGROUP",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 6
+													}
+												},
+												{
+													"source": {
+														"name": "AGGVALUE",
+														"type": "Double"
+													},
+													"sink": {
+														"type": "Double",
+														"ordinal": 7
+													}
+												}
+											]
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_ora_DQ_ela_src_template",
+											"type": "DatasetReference"
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_csv_dq_recon_queryout",
+											"type": "DatasetReference"
+										}
+									]
+								}
+							]
+						},
+						{
+							"value": "BDWPROD",
+							"activities": [
+								{
+									"name": "Copy_from_BDWPROD",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "OracleSource",
+											"oracleReaderQuery": {
+												"value": "@concat(\n'select ''',\npipeline().parameters.RuleId,\n''' as RuleId,''',\npipeline().parameters.RunDate,\n''' as RunDate,coalesce(''',\npipeline().parameters.RunId,\n''',''0'') as RunId,',\n'to_timestamp(substr(''',\npipeline().TriggerTime,\n''',1,19),''YYYY-MM-DD\"T\"HH24:MI:SS'') as insert_ts,''',\npipeline().parameters.QueryFor,\n''' as QuerySide,',\n'qo.aggGroup, qo.aggValue from (',\npipeline().parameters.Query,\n') qo'\n)",
+												"type": "Expression"
+											},
+											"partitionOption": "None",
+											"queryTimeout": "02:00:00"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "ls_audi_adls",
+												"type": "LinkedServiceReference"
+											},
+											"path": "audi/stage"
+										},
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"name": "RULEID",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 1
+													}
+												},
+												{
+													"source": {
+														"name": "RUNDATE",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 2
+													}
+												},
+												{
+													"source": {
+														"name": "RUNID",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 3
+													}
+												},
+												{
+													"source": {
+														"name": "INSERT_TS",
+														"type": "DateTime"
+													},
+													"sink": {
+														"type": "DateTime",
+														"ordinal": 4
+													}
+												},
+												{
+													"source": {
+														"name": "QUERYSIDE",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 5
+													}
+												},
+												{
+													"source": {
+														"name": "AGGGROUP",
+														"type": "String"
+													},
+													"sink": {
+														"type": "String",
+														"ordinal": 6
+													}
+												},
+												{
+													"source": {
+														"name": "AGGVALUE",
+														"type": "Double"
+													},
+													"sink": {
+														"type": "Double",
+														"ordinal": 7
+													}
+												}
+											]
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_ora_DQ_bdw_src_template",
+											"type": "DatasetReference"
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_csv_dq_recon_queryout",
+											"type": "DatasetReference"
+										}
+									]
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"QueryFor": {
+				"type": "string",
+				"defaultValue": "Source"
+			},
+			"Database": {
+				"type": "string",
+				"defaultValue": "Azure"
+			},
+			"Schema": {
+				"type": "string",
+				"defaultValue": "APP_IBRO"
+			},
+			"Table": {
+				"type": "string",
+				"defaultValue": "IBRO_SUBSCRIBER_ACTIVITY"
+			},
+			"Query": {
+				"type": "string",
+				"defaultValue": "select '2020-01-01' as aggGroup, 1 as aggValue"
+			},
+			"RuleId": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"RunDate": {
+				"type": "string",
+				"defaultValue": "2020-01-01"
+			},
+			"RunId": {
+				"type": "string",
+				"defaultValue": "0"
+			}
+		},
+		"variables": {
+			"vRuleId": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"vRunDate": {
+				"type": "String",
+				"defaultValue": "2020-01-01"
+			},
+			"vQuery": {
+				"type": "String",
+				"defaultValue": "select '2020-01-01' as aggGroup, 1 as aggValue"
+			}
+		},
+		"folder": {
+			"name": "DQ"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-16T20:13:25Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

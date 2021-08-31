@@ -1,0 +1,16 @@
+{
+	"name": "ds_ora_DQ_ela_src_template",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_onprem_ela",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "DQ"
+		},
+		"annotations": [],
+		"type": "OracleTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

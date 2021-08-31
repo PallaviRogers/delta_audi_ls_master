@@ -1,0 +1,29 @@
+{
+	"name": "trigger_redui_report_lines",
+	"properties": {
+		"description": "trigger to load mbuadl_agg.redui_report_lines",
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_onprem_adls_audi",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schemaname": "mbuadl_agg",
+					"tablename": "redui_report_lines"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 24,
+				"startTime": "2020-06-29T19:15:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

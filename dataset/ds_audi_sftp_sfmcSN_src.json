@@ -1,0 +1,317 @@
+{
+	"name": "ds_audi_sftp_sfmcSN_src",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_audi_sftp_sfmc_SN",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"foldername": {
+				"type": "string"
+			},
+			"header": {
+				"type": "bool"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "SftpLocation",
+				"folderPath": {
+					"value": "@dataset().foldername",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": {
+				"value": "@dataset().header",
+				"type": "Expression"
+			},
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "Guid",
+				"type": "String"
+			},
+			{
+				"name": "SubscriberKey",
+				"type": "String"
+			},
+			{
+				"name": "FirstName",
+				"type": "String"
+			},
+			{
+				"name": "LastName",
+				"type": "String"
+			},
+			{
+				"name": "LanguagePreference",
+				"type": "String"
+			},
+			{
+				"name": "AutoRenewalStatus",
+				"type": "String"
+			},
+			{
+				"name": "Province",
+				"type": "String"
+			},
+			{
+				"name": "ProductPackage",
+				"type": "String"
+			},
+			{
+				"name": "ZuoraConfirmation",
+				"type": "String"
+			},
+			{
+				"name": "PromoCode",
+				"type": "String"
+			},
+			{
+				"name": "Username",
+				"type": "String"
+			},
+			{
+				"name": "RegistrationDate",
+				"type": "String"
+			},
+			{
+				"name": "LastLoginDate",
+				"type": "String"
+			},
+			{
+				"name": "TrialStartDate",
+				"type": "String"
+			},
+			{
+				"name": "TrialEndDate",
+				"type": "String"
+			},
+			{
+				"name": "PaidStartDate",
+				"type": "String"
+			},
+			{
+				"name": "PaidEndDate",
+				"type": "String"
+			},
+			{
+				"name": "PurchaseStatus",
+				"type": "String"
+			},
+			{
+				"name": "ChargeAmount",
+				"type": "String"
+			},
+			{
+				"name": "Hst",
+				"type": "String"
+			},
+			{
+				"name": "Pst",
+				"type": "String"
+			},
+			{
+				"name": "Qst",
+				"type": "String"
+			},
+			{
+				"name": "Gst",
+				"type": "String"
+			},
+			{
+				"name": "CancellationDate",
+				"type": "String"
+			},
+			{
+				"name": "EmailAddress",
+				"type": "String"
+			},
+			{
+				"name": "CampaignCode",
+				"type": "String"
+			},
+			{
+				"name": "CaslData",
+				"type": "String"
+			},
+			{
+				"name": "PromotionName",
+				"type": "String"
+			},
+			{
+				"name": "PromoCodeStartDate",
+				"type": "String"
+			},
+			{
+				"name": "PromoCodeEndDate",
+				"type": "String"
+			},
+			{
+				"name": "PendingPaymentDate",
+				"type": "String"
+			},
+			{
+				"name": "BasePrice",
+				"type": "String"
+			},
+			{
+				"name": "RefundAmount",
+				"type": "String"
+			},
+			{
+				"name": "RegistrationSource",
+				"type": "String"
+			},
+			{
+				"name": "VODStreams2Weeks",
+				"type": "String"
+			},
+			{
+				"name": "VODStreams3Weeks",
+				"type": "String"
+			},
+			{
+				"name": "VODStreams30Days",
+				"type": "String"
+			},
+			{
+				"name": "ConnectedDevice",
+				"type": "String"
+			},
+			{
+				"name": "Mobile",
+				"type": "String"
+			},
+			{
+				"name": "Desktop",
+				"type": "String"
+			},
+			{
+				"name": "AndroidPad",
+				"type": "String"
+			},
+			{
+				"name": "AndroidPhone",
+				"type": "String"
+			},
+			{
+				"name": "AndroidTV",
+				"type": "String"
+			},
+			{
+				"name": "AppleTV",
+				"type": "String"
+			},
+			{
+				"name": "Chromecast",
+				"type": "String"
+			},
+			{
+				"name": "FireTV",
+				"type": "String"
+			},
+			{
+				"name": "iPad",
+				"type": "String"
+			},
+			{
+				"name": "iPhone",
+				"type": "String"
+			},
+			{
+				"name": "PS4",
+				"type": "String"
+			},
+			{
+				"name": "XBOXONE",
+				"type": "String"
+			},
+			{
+				"name": "XFINITYX1",
+				"type": "String"
+			},
+			{
+				"name": "NHL",
+				"type": "String"
+			},
+			{
+				"name": "MLB",
+				"type": "String"
+			},
+			{
+				"name": "NBA",
+				"type": "String"
+			},
+			{
+				"name": "BlueJays",
+				"type": "String"
+			},
+			{
+				"name": "Raps",
+				"type": "String"
+			},
+			{
+				"name": "TOR",
+				"type": "String"
+			},
+			{
+				"name": "CGY",
+				"type": "String"
+			},
+			{
+				"name": "EDM",
+				"type": "String"
+			},
+			{
+				"name": "MTL",
+				"type": "String"
+			},
+			{
+				"name": "OTT",
+				"type": "String"
+			},
+			{
+				"name": "VAN",
+				"type": "String"
+			},
+			{
+				"name": "WPG",
+				"type": "String"
+			},
+			{
+				"name": "DaysSinceLastStream",
+				"type": "String"
+			},
+			{
+				"name": "StreamsThisWeek",
+				"type": "String"
+			},
+			{
+				"name": "Streams2Weeks",
+				"type": "String"
+			},
+			{
+				"name": "Streams3Weeks",
+				"type": "String"
+			},
+			{
+				"name": "Streams30Days",
+				"type": "String"
+			},
+			{
+				"name": "VODStreamsThisWeek",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

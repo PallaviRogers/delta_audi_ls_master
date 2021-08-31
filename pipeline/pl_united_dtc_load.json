@@ -1,0 +1,379 @@
+{
+	"name": "pl_united_dtc_load",
+	"properties": {
+		"activities": [
+			{
+				"name": "ingest_by_src_file_type",
+				"type": "Switch",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"on": {
+						"value": "@toUpper(pipeline().parameters.SRC_COMPRESSION_FORMAT)",
+						"type": "Expression"
+					},
+					"cases": [
+						{
+							"value": "ZIP",
+							"activities": [
+								{
+									"name": "Copy_S3_DTC_Zip",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "BinarySource",
+											"storeSettings": {
+												"type": "AmazonS3ReadSettings",
+												"recursive": true,
+												"modifiedDatetimeStart": {
+													"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+													"type": "Expression"
+												},
+												"modifiedDatetimeEnd": {
+													"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+													"type": "Expression"
+												},
+												"wildcardFileName": {
+													"value": "@if(equals(toUpper(pipeline().parameters.DBFS_SAVE_MODE),'APPEND'),concat(pipeline().parameters.SRC_FILE_PATH,'*.zip'),concat(pipeline().parameters.SRC_FILE_PATH,formatDateTime(utcnow(),'yyyy-MM-dd'),'*.zip'))",
+													"type": "Expression"
+												},
+												"deleteFilesAfterCompletion": false
+											},
+											"formatSettings": {
+												"type": "BinaryReadSettings"
+											}
+										},
+										"sink": {
+											"type": "BinarySink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings",
+												"maxConcurrentConnections": 1
+											}
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_audi_s3_dtc_binary_src",
+											"type": "DatasetReference",
+											"parameters": {
+												"s3bucketname": {
+													"value": "@pipeline().parameters.S3_BUCKET",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@concat(pipeline().parameters.SRC_FILE_PATH,'*.zip')",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_audi_s3_dtc_binary_snk",
+											"type": "DatasetReference",
+											"parameters": {
+												"schemaname": {
+													"value": "@pipeline().parameters.SCHEMA_NAME",
+													"type": "Expression"
+												},
+												"tablename": {
+													"value": "@pipeline().parameters.TABLE_NAME",
+													"type": "Expression"
+												},
+												"containername": {
+													"value": "@pipeline().parameters.STAGE_CONTAINER",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "Execute DTC Unzip Pipeline",
+									"type": "ExecutePipeline",
+									"dependsOn": [
+										{
+											"activity": "DTC Zipped V_SRC_COUNT_DERIVED",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_united_dtc_unzip",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"V_ZIPPED_SRC_CNT_DERIVED": {
+												"value": "@string(activity('Copy_S3_DTC_Zip').output.dataWritten)",
+												"type": "Expression"
+											},
+											"SCHEMA_NAME": {
+												"value": "@pipeline().parameters.SCHEMA_NAME",
+												"type": "Expression"
+											},
+											"TABLE_NAME": {
+												"value": "@pipeline().parameters.TABLE_NAME",
+												"type": "Expression"
+											},
+											"STAGE_CONTAINER": {
+												"value": "@pipeline().parameters.STAGE_CONTAINER",
+												"type": "Expression"
+											},
+											"SRC_FILE_HEADER": {
+												"value": "@pipeline().parameters.SRC_FILE_HEADER",
+												"type": "Expression"
+											}
+										}
+									}
+								},
+								{
+									"name": "DTC Zipped V_SRC_COUNT_DERIVED",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "Copy_S3_DTC_Zip",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_SRC_COUNT_DERIVED",
+										"value": {
+											"value": "@string(activity('Copy_S3_DTC_Zip').output.dataWritten)",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"value": "NULL",
+							"activities": [
+								{
+									"name": "Copying csv file from DTC",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AmazonS3ReadSettings",
+												"recursive": true,
+												"modifiedDatetimeStart": {
+													"value": "@pipeline().parameters.WINDOW_START_TIME_UTC",
+													"type": "Expression"
+												},
+												"modifiedDatetimeEnd": {
+													"value": "@pipeline().parameters.WINDOW_END_TIME_UTC",
+													"type": "Expression"
+												},
+												"wildcardFileName": {
+													"value": "@if(and(equals(toUpper(pipeline().parameters.DBFS_SAVE_MODE),'OVERWRITE'),equals(toLower(pipeline().parameters.TABLE_NAME),'gift_codes')),concat(pipeline().parameters.SRC_FILE_PATH,formatDateTime(adddays(utcnow(),-1),'yyyy-MM-dd'),'*.csv'),if(equals(toUpper(pipeline().parameters.DBFS_SAVE_MODE),'OVERWRITE'),concat(pipeline().parameters.SRC_FILE_PATH,formatDateTime(utcnow(),'yyyy-MM-dd'),'*.csv'),concat(pipeline().parameters.SRC_FILE_PATH,'*.csv')))",
+													"type": "Expression"
+												},
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_audi_s3_dtc_src",
+											"type": "DatasetReference",
+											"parameters": {
+												"s3bucketname": {
+													"value": "@pipeline().parameters.S3_BUCKET",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@concat(pipeline().parameters.SRC_FILE_PATH,'*.csv')",
+													"type": "Expression"
+												},
+												"header": {
+													"value": "@pipeline().parameters.SRC_FILE_HEADER",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_csv_audi_adls_dtc_unzip_snk",
+											"type": "DatasetReference",
+											"parameters": {
+												"schemaname": {
+													"value": "@pipeline().parameters.SCHEMA_NAME",
+													"type": "Expression"
+												},
+												"tablename": {
+													"value": "@pipeline().parameters.TABLE_NAME",
+													"type": "Expression"
+												},
+												"containername": {
+													"value": "@pipeline().parameters.STAGE_CONTAINER",
+													"type": "Expression"
+												},
+												"header": {
+													"value": "@pipeline().parameters.SRC_FILE_HEADER",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "DTC V_SRC_COUNT_DERIVED_copy1",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "Copying csv file from DTC",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_SRC_COUNT_DERIVED",
+										"value": {
+											"value": "@string(activity('Copying csv file from DTC').output.dataWritten)",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"TABLE_NAME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SCHEMA_NAME": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"WINDOW_END_TIME_UTC": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"WINDOW_START_TIME_UTC": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_FILE_PATH": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"STAGE_CONTAINER": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"S3_BUCKET": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"STAGE_PATH": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_CUSTOM_WHERE_CLAUSE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"QRY": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"CURR_MAX_DELTA_COL_VALUE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_DELTA_COL": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"CURR_MAX_DELTA_COL_VALUE_FORMAT": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_COMPRESSION_FORMAT": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"SRC_FILE_HEADER": {
+				"type": "string",
+				"defaultValue": "NULL"
+			},
+			"DBFS_SAVE_MODE": {
+				"type": "string",
+				"defaultValue": "NULL"
+			}
+		},
+		"variables": {
+			"V_SRC_COUNT_DERIVED": {
+				"type": "String",
+				"defaultValue": "NULL"
+			},
+			"V_CURR_DELTA_VAL_DERIVED": {
+				"type": "String",
+				"defaultValue": "NULL"
+			}
+		},
+		"folder": {
+			"name": "United"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-08-31T04:34:30Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

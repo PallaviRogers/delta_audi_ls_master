@@ -1,0 +1,110 @@
+{
+	"name": "pl_onprem_adls_environics",
+	"properties": {
+		"activities": [
+			{
+				"name": "load_environics_tables_sequentially",
+				"description": "pipeline to load envirnonics tables from on-prem to adls.",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.table",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "pl_onprem_adls_audi",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_onprem_adls_audi",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"schemaname": "environics",
+									"tablename": {
+										"value": "@item()",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"table": {
+				"type": "array",
+				"defaultValue": [
+					"censusplus",
+					"censusplus_reference ",
+					"demostats",
+					"demostats_archive",
+					"demostats_reference",
+					"demostats_reference_archive",
+					"demostats_trends",
+					"demostats_trends_reference",
+					"gegraphical_hierarchy",
+					"geographical_hierarchy_archive",
+					"geographical_hierarchy_reference",
+					"geographical_hierarchy_reference_archive",
+					"householdspend",
+					"householdspend_archive",
+					"householdspend_reference",
+					"householdspend_reference_archive",
+					"opticks_vividata",
+					"opticks_vividata_reference",
+					"prizm5_geoprofiles",
+					"prizm5_geoprofiles_archive",
+					"prizm5_geoprofiles_reference",
+					"prizm5_geoprofiles_reference_archive",
+					"prizm5_qc_geoprofiles",
+					"prizm5_qc_geoprofiles_archive",
+					"prizm5_qc_geoprofiles_reference",
+					"prizm5_qc_geoprofiles_reference_archive",
+					"prizm5_qc_rurallicenses",
+					"prizm5_qc_rurallicenses_archive",
+					"prizm5_qc_rurallicenses_reference",
+					"prizm5_qc_rurallicenses_reference_archive",
+					"prizm5_qc_uniquelicenses",
+					"prizm5_qc_uniquelicenses_archive",
+					"prizm5_qc_uniquelicenses_reference",
+					"prizm5_qc_uniquelicenses_reference_archive",
+					"prizm5_rurallicenses",
+					"prizm5_rurallicenses_archive",
+					"prizm5_rurallicenses_reference",
+					"prizm5_rurallicenses_reference_archive",
+					"prizm5_segment_reference",
+					"prizm5_uniquelicenses",
+					"prizm5_uniquelicenses_archive",
+					"prizm5_uniquelicenses_reference",
+					"prizm5_uniquelicenses_reference_archive",
+					"socialvalues",
+					"socialvalues_archive",
+					"socialvalues_reference",
+					"socialvalues_reference_archive",
+					"demostats_2018",
+					"demostats_trends_archive_2018",
+					"prizm5_qc_geoprofiles_reference_2018",
+					"prizm5_qc_rurallicenses_2018",
+					"prizm5_qc_rurallicenses_reference_2018",
+					"environics_prizm5_qc_uniquelicenses_2018",
+					"prizm5_rurallicenses_2018",
+					"prizm5_uniquelicenses_2018",
+					"prizm5_uniquelicenses_reference_2018",
+					"socialvalues_2018"
+				]
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-03-22T22:20:47Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

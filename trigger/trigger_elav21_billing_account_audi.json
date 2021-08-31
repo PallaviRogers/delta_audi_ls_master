@@ -1,0 +1,42 @@
+{
+	"name": "trigger_elav21_billing_account_audi",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_audi_ela_azure",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"schema_name": "ela_v21",
+					"src_table_name": "billing_account",
+					"column_list": "DMT_CRYPTO.TOKENIZE(BAN, 'K1') as BAN, BAN_STATUS, DEFAULT_SUB_MARKET, COL_REGION, COMPANY_CODE, COMPANY_NAME, BILLING_LANGUAGE, LAST_CTN_TYPE, LAST_IFN_TYPE, account_type, account_sub_type",
+					"tgt_table_name": "billing_account_audi",
+					"filter_condition": " where nvl(gg_op_type,'I') <>'D'"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2020-12-08T12:41:00",
+				"timeZone": "Eastern Standard Time",
+				"schedule": {
+					"minutes": [
+						0
+					],
+					"hours": [
+						1
+					],
+					"weekDays": [
+						"Saturday"
+					]
+				}
+			}
+		}
+	}
+}
